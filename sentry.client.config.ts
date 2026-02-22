@@ -1,39 +1,34 @@
-import * as Sentry from '@sentry/nextjs'
+// Sentry client configuration - OPTIONAL
+// Only initializes if SENTRY_DSN is configured
 
-Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN
 
-  // Adjust this value in production, or use tracesSampler for greater control
-  tracesSampleRate: 1,
-
-  // Setting this option to true will print useful information to the console while you're setting up Sentry.
-  debug: false,
-
-  replaysOnErrorSampleRate: 1.0,
-
-  // This sets the sample rate to be 10%. You may want this to be 100% while
-  // in development and sample at a lower rate in production
-  replaysSessionSampleRate: 0.1,
-
-  // You can remove this option if you're not planning to use the Sentry Session Replay feature:
-  integrations: [
-    Sentry.replayIntegration({
-      // Additional Replay configuration goes in here, for example:
-      maskAllText: true,
-      blockAllMedia: true,
-    }),
-  ],
-
-  environment: process.env.NODE_ENV,
-  
-  // Ignore common errors
-  ignoreErrors: [
-    // Browser extensions
-    'top.GLOBALS',
-    'chrome-extension://',
-    'moz-extension://',
-    // Network errors
-    'NetworkError',
-    'Failed to fetch',
-  ],
-})
+if (dsn) {
+  import('@sentry/nextjs').then((Sentry) => {
+    Sentry.init({
+      dsn,
+      tracesSampleRate: 1,
+      debug: false,
+      replaysOnErrorSampleRate: 1.0,
+      replaysSessionSampleRate: 0.1,
+      integrations: [
+        Sentry.replayIntegration({
+          maskAllText: true,
+          blockAllMedia: true,
+        }),
+      ],
+      environment: process.env.NODE_ENV,
+      ignoreErrors: [
+        'top.GLOBALS',
+        'chrome-extension://',
+        'moz-extension://',
+        'NetworkError',
+        'Failed to fetch',
+      ],
+    })
+  }).catch(() => {
+    console.warn('Sentry initialization failed')
+  })
+} else if (process.env.NODE_ENV === 'production') {
+  console.warn('⚠️  Sentry not configured - error tracking disabled')
+}

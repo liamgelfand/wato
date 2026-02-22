@@ -11,8 +11,7 @@ describe('Validation Schemas', () => {
         title: 'Do 50 pushups',
         description: 'Complete 50 pushups in one session',
         category: 'FITNESS',
-        difficulty: 'MEDIUM',
-        basePoints: 100,
+        difficulty: 3, // 1-5 scale
       }
 
       const result = createChallengeSchema.safeParse(validChallenge)
@@ -24,21 +23,19 @@ describe('Validation Schemas', () => {
         title: 'Hi',
         description: 'Complete 50 pushups in one session',
         category: 'FITNESS',
-        difficulty: 'MEDIUM',
-        basePoints: 100,
+        difficulty: 3,
       }
 
       const result = createChallengeSchema.safeParse(invalidChallenge)
       expect(result.success).toBe(false)
     })
 
-    it('should reject challenge with negative points', () => {
+    it('should reject challenge with invalid difficulty', () => {
       const invalidChallenge = {
         title: 'Do 50 pushups',
         description: 'Complete 50 pushups in one session',
         category: 'FITNESS',
-        difficulty: 'MEDIUM',
-        basePoints: -10,
+        difficulty: 10, // Out of range
       }
 
       const result = createChallengeSchema.safeParse(invalidChallenge)
@@ -50,8 +47,7 @@ describe('Validation Schemas', () => {
         title: 'Do 50 pushups',
         description: 'Complete 50 pushups in one session',
         category: 'INVALID_CATEGORY',
-        difficulty: 'MEDIUM',
-        basePoints: 100,
+        difficulty: 3,
       }
 
       const result = createChallengeSchema.safeParse(invalidChallenge)

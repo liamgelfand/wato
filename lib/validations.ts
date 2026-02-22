@@ -43,6 +43,12 @@ export const createChallengeSchema = z.object({
 export type CreateChallengeInput = z.infer<typeof createChallengeSchema>
 
 // Attempt schemas
+export const createAttemptSchema = z.object({
+  challengeId: z.string().cuid('Invalid challenge ID'),
+})
+
+export type CreateAttemptInput = z.infer<typeof createAttemptSchema>
+
 export const uploadProofSchema = z.object({
   attemptId: z.string().cuid(),
   file: z.instanceof(File).refine(

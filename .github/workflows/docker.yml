@@ -2,11 +2,11 @@ name: Docker Build & Push
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main]  # Only build on production pushes
     tags:
       - 'v*'
   pull_request:
-    branches: [main]
+    branches: [main]  # Build on PRs to main
 
 env:
   REGISTRY: ghcr.io

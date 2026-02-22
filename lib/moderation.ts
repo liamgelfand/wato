@@ -66,9 +66,20 @@ export function checkBannedWords(text: string): { isSafe: boolean; matches: stri
   }
 }
 
+// Alias for tests
+export function containsBannedWords(text: string): boolean {
+  return !checkBannedWords(text).isSafe
+}
+
 export function validateCategory(category: string): boolean {
   const validCategories = ['FITNESS', 'SKILL', 'CREATIVITY', 'ADVENTURE', 'FUNNY']
   return validCategories.includes(category.toUpperCase())
+}
+
+// Alias for tests
+export function isValidCategory(category: any): boolean {
+  if (typeof category !== 'string') return false
+  return validateCategory(category)
 }
 
 export interface ChallengeValidationResult {

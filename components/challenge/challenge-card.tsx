@@ -31,7 +31,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   FUNNY: 'bg-pink-100 text-pink-800',
 }
 
-export function ChallengeCard({ challenge }: ChallengeCardProps) {
+export default function ChallengeCard({ challenge }: ChallengeCardProps) {
   const creatorInitials = challenge.creator.name
     ? challenge.creator.name.split(' ').map(n => n[0]).join('').toUpperCase()
     : challenge.creator.username.substring(0, 2).toUpperCase()

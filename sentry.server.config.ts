@@ -1,13 +1,17 @@
-import * as Sentry from '@sentry/nextjs'
+// Sentry server configuration - OPTIONAL
+// Only initializes if SENTRY_DSN is configured
 
-Sentry.init({
-  dsn: process.env.SENTRY_DSN,
+const dsn = process.env.SENTRY_DSN
 
-  // Adjust this value in production, or use tracesSampler for greater control
-  tracesSampleRate: 1,
-
-  // Setting this option to true will print useful information to the console while you're setting up Sentry.
-  debug: false,
-
-  environment: process.env.NODE_ENV,
-})
+if (dsn) {
+  import('@sentry/nextjs').then((Sentry) => {
+    Sentry.init({
+      dsn,
+      tracesSampleRate: 1,
+      debug: false,
+      environment: process.env.NODE_ENV,
+    })
+  }).catch(() => {
+    console.warn('Sentry server initialization failed')
+  })
+}

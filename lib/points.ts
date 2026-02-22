@@ -84,9 +84,25 @@ export async function getUserWeeklyPoints(userId: string): Promise<number> {
   return result._sum.points || 0
 }
 
-export function calculateChallengePoints(difficulty: number): number {
-  const basePoints = 10
-  return basePoints * difficulty
+export function calculateChallengePoints(basePoints: number, difficulty: string | number): number {
+  // Handle both string enum and number difficulty
+  let multiplier = 1
+  
+  if (typeof difficulty === 'string') {
+    const multipliers: Record<string, number> = {
+      'EASY': 1.0,
+      'MEDIUM': 1.5,
+      'HARD': 2.0,
+      'EXPERT': 3.0,
+      'EXTREME': 5.0,
+    }
+    multiplier = multipliers[difficulty] || 1
+  } else {
+    // If it's a number (1-5), use it directly as multiplier
+    multiplier = difficulty
+  }
+  
+  return Math.round(basePoints * multiplier)
 }
 
 // TODO: Badge/Achievement system

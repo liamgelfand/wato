@@ -1,0 +1,14 @@
+chore: update database config and remove obsolete scripts
+
+Database Configuration (lib/db.ts):
+- Updated Prisma client for version 7 compatibility
+- Add @prisma/adapter-pg for Prisma 7
+- Configure connection pooling with pg adapter
+- Improve singleton pattern for client instantiation
+
+Removed Obsolete Files:
+- docker-start.ps1 (replaced by scripts/docker-start.ps1)
+- start-dev.ps1 (replaced by scripts/start-dev.ps1)
+- next.config.ts (replaced by next.config.js)
+
+All functionality preserved in new locations with better organization.
