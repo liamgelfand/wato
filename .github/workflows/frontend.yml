@@ -1,0 +1,91 @@
+name: Frontend CI
+
+on:
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'components/**'
+      - '**.tsx'
+      - '**.css'
+      - 'public/**'
+      - 'package.json'
+      - 'tsconfig.json'
+      - 'tailwind.config.*'
+      - 'next.config.*'
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  frontend-tests:
+    name: Frontend Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run frontend unit tests
+        run: npm run test:unit -- --testPathPattern=components
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          flags: frontend
+        continue-on-error: true
+
+  frontend-lint:
+    name: Frontend Linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint frontend code
+        run: npm run lint -- app components
+
+  frontend-build:
+    name: Frontend Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Build application
+        env:
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: build-secret
+        run: npm run build
