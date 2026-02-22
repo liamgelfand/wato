@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+*.lcov
+/test-results
+/playwright-report
+/playwright/.cache
 
 # next.js
 /.next/
@@ -19,6 +23,7 @@
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store
@@ -29,10 +34,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# env files
+# local env files
 .env
 .env*.local
-.env.production
+.env.development.local
+.env.test.local
+.env.production.local
 
 # vercel
 .vercel
@@ -42,15 +49,33 @@ yarn-error.log*
 next-env.d.ts
 
 # prisma
-prisma/migrations/*_migration/
+prisma/migrations/*_
+node_modules/.prisma
 
-# uploads (local storage)
+# uploads
 /public/uploads/*
 !/public/uploads/.gitkeep
+/storage
+/uploads
 
-# ide
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Test databases
+*.db
+*.db-journal
+
+# Logs
+logs
+*.log
