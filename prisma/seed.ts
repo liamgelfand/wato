@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, ChallengeCategory } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
 import bcrypt from 'bcryptjs'
@@ -156,6 +156,7 @@ async function main() {
     const created = await prisma.challenge.create({
       data: {
         ...challenge,
+        category: challenge.category as ChallengeCategory,
         creatorId: creator.id,
         basePoints: 10,
         points,

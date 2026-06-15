@@ -1,5 +1,6 @@
 import { prisma } from './db'
 import { createNotification } from './notifications'
+import { checkAndAwardBadges } from './badges'
 
 export async function awardPoints(
   userId: string,
@@ -45,15 +46,16 @@ export async function awardPoints(
     })
   })
 
-  // Create notification for the user
   await createNotification({
     userId,
     type: 'ATTEMPT_APPROVED',
     referenceType: 'ATTEMPT',
     referenceId: attemptId,
     title: 'Challenge Completed!',
-    body: `Your attempt was approved! You earned ${points} points! 🎉`,
+    body: `Your attempt was approved! You earned ${points} points!`,
   })
+
+  await checkAndAwardBadges(userId)
 }
 
 export async function getUserTotalPoints(userId: string): Promise<number> {
@@ -105,16 +107,3 @@ export function calculateChallengePoints(basePoints: number, difficulty: string 
   return Math.round(basePoints * multiplier)
 }
 
-// TODO: Badge/Achievement system
-// This function can be called after awarding points to check for badge eligibility
-export async function checkAndAwardBadges(userId: string): Promise<void> {
-  // Future implementation:
-  // - First Challenge Created
-  // - 10 Challenges Completed
-  // - 100 Points Earned
-  // - 1000 Points Earned
-  // - Week Streak
-  // - Social Butterfly (10 friends)
-  // - Verification Volunteer (verified 10 attempts)
-  console.log(`TODO: Check badges for user ${userId}`)
-}

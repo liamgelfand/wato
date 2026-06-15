@@ -83,7 +83,7 @@ export function ReportDialog({ targetType, targetId, triggerText }: ReportDialog
         <DialogHeader>
           <DialogTitle>Report Content</DialogTitle>
           <DialogDescription>
-            Help us keep DareScore safe by reporting inappropriate content
+            Help us keep Wato safe by reporting inappropriate content
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">

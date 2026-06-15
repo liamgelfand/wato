@@ -61,30 +61,25 @@ const nextConfig = {
     ]
   },
 
-  // Redirect HTTP to HTTPS in production
-  async redirects() {
-    if (process.env.NODE_ENV === 'production') {
-      return [
-        {
-          source: '/:path*',
-          has: [
-            {
-              type: 'header',
-              key: 'x-forwarded-proto',
-              value: 'http',
-            },
-          ],
-          destination: 'https://:host/:path*',
-          permanent: true,
-        },
-      ]
-    }
-    return []
-  },
-
   // Environment variables exposed to the browser
   env: {
     NEXT_PUBLIC_APP_URL: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+    NEXT_PUBLIC_GOOGLE_OAUTH_ENABLED: process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? 'true' : 'false',
+  },
+
+  async redirects() {
+    const redirects = [
+      { source: '/signup', destination: '/register', permanent: true },
+    ]
+    if (process.env.NODE_ENV === 'production') {
+      redirects.push({
+        source: '/:path*',
+        has: [{ type: 'header', key: 'x-forwarded-proto', value: 'http' }],
+        destination: 'https://:host/:path*',
+        permanent: true,
+      })
+    }
+    return redirects
   },
 
   // Compiler options for better performance

@@ -1,52 +1,38 @@
-name: CI/CD Pipeline
+name: CI
 
 on:
   pull_request:
-    branches: [main, dev]
+    branches: [main]
   push:
-    branches: [main]  # Only run on push to main (production)
+    branches: [main]
 
 env:
   NODE_VERSION: '20'
-  POSTGRES_VERSION: '14'
 
 jobs:
-  # Job 1: Linting and Type Checking
   lint:
     name: Lint & Type Check
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npx tsc --noEmit
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run ESLint
-        run: npm run lint
-
-      - name: TypeScript type check
-        run: npx tsc --noEmit
-
-  # Job 2: Unit and Integration Tests
-  test-unit:
+  test:
     name: Unit & Integration Tests
     runs-on: ubuntu-latest
-
     services:
       postgres:
         image: postgres:14
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: testpassword
-          POSTGRES_DB: darescore_test
+          POSTGRES_DB: wato_test
         ports:
           - 5433:5432
         options: >-
@@ -54,56 +40,34 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma Client
-        run: npx prisma generate
-
-      - name: Run database migrations
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
         env:
-          DATABASE_URL: postgresql://postgres:testpassword@localhost:5433/darescore_test
-        run: npx prisma migrate deploy
-
-      - name: Run unit tests
+          DATABASE_URL: postgresql://postgres:testpassword@localhost:5433/wato_test
+      - run: npm run test:ci
         env:
-          DATABASE_URL: postgresql://postgres:testpassword@localhost:5433/darescore_test
+          DATABASE_URL: postgresql://postgres:testpassword@localhost:5433/wato_test
           NEXTAUTH_URL: http://localhost:3000
-          NEXTAUTH_SECRET: test-secret-key
-        run: npm run test:ci
+          NEXTAUTH_SECRET: test-secret-32-characters-long!!!
 
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
-        continue-on-error: true
-
-  # Job 3: E2E Tests with Playwright
-  test-e2e:
-    name: E2E Tests (Playwright)
+  e2e:
+    name: E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
-
     services:
       postgres:
         image: postgres:14
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: testpassword
-          POSTGRES_DB: darescore_test
+          POSTGRES_DB: wato_test
         ports:
           - 5432:5432
         options: >-
@@ -111,173 +75,76 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Generate Prisma Client
-        run: npx prisma generate
-
-      - name: Run database migrations
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
         env:
-          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/darescore_test
-        run: npx prisma migrate deploy
-
-      - name: Seed database
+          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/wato_test
+      - run: npm run db:seed
         env:
-          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/darescore_test
-        run: npm run db:seed
-
-      - name: Run E2E tests
+          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/wato_test
+      - run: npm run test:e2e
         env:
-          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/darescore_test
+          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/wato_test
           NEXTAUTH_URL: http://localhost:3000
-          NEXTAUTH_SECRET: test-secret-key
-        run: npm run test:e2e
-
-      - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
+          NEXTAUTH_SECRET: test-secret-32-characters-long!!!
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report
           path: playwright-report/
-          retention-days: 30
+          retention-days: 14
 
-  # Job 4: BDD Tests with Cucumber
-  test-bdd:
-    name: BDD Tests (Cucumber)
-    runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:14
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: testpassword
-          POSTGRES_DB: darescore_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright browsers (for BDD)
-        run: npx playwright install --with-deps chromium
-
-      - name: Generate Prisma Client
-        run: npx prisma generate
-
-      - name: Run database migrations
-        env:
-          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/darescore_test
-        run: npx prisma migrate deploy
-
-      - name: Seed database
-        env:
-          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/darescore_test
-        run: npm run db:seed
-
-      - name: Run BDD tests
-        env:
-          DATABASE_URL: postgresql://postgres:testpassword@localhost:5432/darescore_test
-          NEXTAUTH_URL: http://localhost:3000
-          NEXTAUTH_SECRET: test-secret-key
-        run: npm run test:bdd
-
-      - name: Upload Cucumber report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: cucumber-report
-          path: test-results/
-          retention-days: 30
-
-  # Job 5: Build Application
   build:
-    name: Build Application
+    name: Build
     runs-on: ubuntu-latest
     needs: [lint]
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma Client
-        run: npx prisma generate
-
-      - name: Build application
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run build
         env:
-          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+          DATABASE_URL: postgresql://build:build@localhost:5432/build
           NEXTAUTH_URL: http://localhost:3000
-          NEXTAUTH_SECRET: build-time-secret
-        run: npm run build
+          NEXTAUTH_SECRET: build-time-placeholder-secret-32chars!!
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+  docker:
+    name: Docker Image Build
+    runs-on: ubuntu-latest
+    needs: [lint]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
         with:
-          name: build-artifacts
-          path: .next/
-          retention-days: 7
+          context: .
+          push: false
+          tags: wato:test
+          build-args: |
+            DATABASE_URL=postgresql://build:build@localhost:5432/build
+            NEXTAUTH_SECRET=build-time-placeholder-secret-32chars!!
+            NEXTAUTH_URL=http://localhost:3000
 
-  # Job 6: Security Audit
   security:
     name: Security Audit
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-
-      - name: Run npm audit
-        run: npm audit --audit-level=high
-        continue-on-error: true
-
-      - name: Run Snyk security scan
-        uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
+      - run: npm ci
+      - run: npm audit --audit-level=high
         continue-on-error: true

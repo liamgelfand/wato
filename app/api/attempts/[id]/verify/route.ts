@@ -7,9 +7,10 @@ import { createNotification } from '@/lib/notifications'
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: routeAttemptId } = await params
     const session = await auth()
 
     if (!session?.user) {
@@ -22,13 +23,13 @@ export async function POST(
     const body = await request.json()
     
     const validation = submitVerificationVoteSchema.safeParse({
-      attemptId: params.id,
+      attemptId: routeAttemptId,
       ...body,
     })
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.errors[0].message },
+        { error: validation.error.issues[0].message },
         { status: 400 }
       )
     }
@@ -58,7 +59,7 @@ export async function POST(
     }
 
     // Check if voter is the attempt owner
-    if (attempt.userId === (session.user as any).id) {
+    if (attempt.userId === session.user.id) {
       return NextResponse.json(
         { error: 'Cannot vote on your own attempt' },
         { status: 400 }
@@ -69,8 +70,8 @@ export async function POST(
     const friendship = await prisma.friendship.findFirst({
       where: {
         OR: [
-          { requesterId: (session.user as any).id, addresseeId: attempt.userId, status: 'ACCEPTED' },
-          { requesterId: attempt.userId, addresseeId: (session.user as any).id, status: 'ACCEPTED' },
+          { requesterId: session.user.id, addresseeId: attempt.userId, status: 'ACCEPTED' },
+          { requesterId: attempt.userId, addresseeId: session.user.id, status: 'ACCEPTED' },
         ],
       },
     })
@@ -87,7 +88,7 @@ export async function POST(
       where: {
         attemptId_voterId: {
           attemptId,
-          voterId: (session.user as any).id,
+          voterId: session.user.id,
         },
       },
     })
@@ -103,7 +104,7 @@ export async function POST(
     await prisma.verificationVote.create({
       data: {
         attemptId,
-        voterId: (session.user as any).id,
+        voterId: session.user.id,
         vote: vote as any,
         reason: reason || null,
       },
@@ -116,7 +117,7 @@ export async function POST(
       referenceType: 'ATTEMPT',
       referenceId: attemptId,
       title: `New verification vote`,
-      body: `${(session.user as any).username} ${vote === 'VERIFY' ? 'verified' : 'rejected'} your attempt`,
+      body: `${session.user.username} ${vote === 'VERIFY' ? 'verified' : 'rejected'} your attempt`,
     })
 
     // Check vote counts

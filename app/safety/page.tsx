@@ -8,18 +8,18 @@ export default function SafetyPage() {
     <div className="container mx-auto max-w-4xl p-4">
       <div className="mb-6">
         <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Shield className="h-8 w-8 text-blue-600" />
+          <Shield className="h-8 w-8 text-primary" />
           Safety Guidelines
         </h1>
         <p className="text-muted-foreground">
-          DareScore is committed to providing a safe and positive environment
+          Wato is committed to providing a safe and positive environment
         </p>
       </div>
 
-      <Alert className="mb-6 border-blue-200 bg-blue-50">
-        <Shield className="h-4 w-4 text-blue-600" />
+      <Alert className="mb-6 border-primary/20 bg-primary/5">
+        <Shield className="h-4 w-4 text-primary" />
         <AlertDescription>
-          <strong>Safety First:</strong> All challenges and activities on DareScore must be safe, legal, and appropriate for all ages.
+          <strong>Safety First:</strong> All challenges and activities on Wato must be safe, legal, and appropriate for all ages.
         </AlertDescription>
       </Alert>
 
@@ -161,7 +161,7 @@ export default function SafetyPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm mb-4">
-            Remember, the goal of DareScore is to have fun, challenge yourself, and connect with friends in a positive way. Always:
+            Remember, the goal of Wato is to have fun, challenge yourself, and connect with friends in a positive way. Always:
           </p>
           <ul className="space-y-2 text-sm">
             <li>• Use common sense and good judgment</li>

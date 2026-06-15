@@ -1,26 +1,121 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: oklch(0.97 0.012 75);
+  --foreground: oklch(0.2 0.02 50);
+  --card: oklch(0.99 0.008 75);
+  --card-foreground: oklch(0.2 0.02 50);
+  --popover: oklch(0.99 0.008 75);
+  --popover-foreground: oklch(0.2 0.02 50);
+  --primary: oklch(0.58 0.19 35);
+  --primary-foreground: oklch(0.98 0.01 75);
+  --secondary: oklch(0.35 0.06 200);
+  --secondary-foreground: oklch(0.96 0.01 75);
+  --muted: oklch(0.93 0.015 75);
+  --muted-foreground: oklch(0.48 0.02 50);
+  --accent: oklch(0.78 0.12 75);
+  --accent-foreground: oklch(0.22 0.03 50);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.98 0.01 75);
+  --border: oklch(0.88 0.02 75);
+  --input: oklch(0.88 0.02 75);
+  --ring: oklch(0.58 0.19 35);
+  --radius: 0.625rem;
+  --success: oklch(0.45 0.1 155);
+  --success-foreground: oklch(0.98 0.01 75);
+}
+
+.dark {
+  --background: oklch(0.16 0.015 50);
+  --foreground: oklch(0.94 0.01 75);
+  --card: oklch(0.2 0.018 50);
+  --card-foreground: oklch(0.94 0.01 75);
+  --popover: oklch(0.2 0.018 50);
+  --popover-foreground: oklch(0.94 0.01 75);
+  --primary: oklch(0.68 0.18 40);
+  --primary-foreground: oklch(0.15 0.02 50);
+  --secondary: oklch(0.42 0.05 200);
+  --secondary-foreground: oklch(0.94 0.01 75);
+  --muted: oklch(0.26 0.015 50);
+  --muted-foreground: oklch(0.65 0.02 75);
+  --accent: oklch(0.55 0.1 75);
+  --accent-foreground: oklch(0.94 0.01 75);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.98 0.01 75);
+  --border: oklch(0.3 0.015 50);
+  --input: oklch(0.3 0.015 50);
+  --ring: oklch(0.68 0.18 40);
+  --success: oklch(0.55 0.12 155);
+  --success-foreground: oklch(0.15 0.02 50);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-outfit);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--border);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Styled range input for difficulty slider */
+input[type="range"].wato-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--muted);
+  outline: none;
+}
+
+input[type="range"].wato-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  border: 2px solid var(--background);
+  box-shadow: 0 1px 3px oklch(0 0 0 / 0.2);
+}
+
+input[type="range"].wato-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  border: 2px solid var(--background);
 }

@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, PlusCircle, Trophy, Users, User } from 'lucide-react'
+import { Home, PlusCircle, Trophy, Users, Bell, MessageSquare } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function MobileNav() {
@@ -17,28 +17,31 @@ export function MobileNav() {
   const navItems = [
     { href: '/', label: 'Feed', icon: Home },
     { href: '/create', label: 'Create', icon: PlusCircle },
-    { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+    { href: '/leaderboard', label: 'Ranks', icon: Trophy },
+    { href: '/messages', label: 'Chat', icon: MessageSquare },
+    { href: '/notifications', label: 'Alerts', icon: Bell },
     { href: '/friends', label: 'Friends', icon: Users },
-    { href: '/profile', label: 'Profile', icon: User },
   ]
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-white">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-card" aria-label="Mobile navigation">
       <div className="flex items-center justify-around">
         {navItems.map((item) => {
           const Icon = item.icon
-          const isActive = pathname === item.href
+          const isActive =
+            pathname === item.href ||
+            (item.href === '/messages' && pathname.startsWith('/messages'))
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                'flex flex-col items-center justify-center py-3 px-4 min-w-[60px]',
-                isActive ? 'text-blue-600' : 'text-gray-600'
+                'flex flex-col items-center justify-center py-2 px-2 min-w-[52px]',
+                isActive ? 'text-primary' : 'text-muted-foreground'
               )}
             >
-              <Icon className="h-6 w-6" />
-              <span className="text-xs mt-1">{item.label}</span>
+              <Icon className="h-5 w-5" />
+              <span className="text-[10px] mt-0.5">{item.label}</span>
             </Link>
           )
         })}

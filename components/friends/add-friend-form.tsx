@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -8,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from 'sonner'
 
 export function AddFriendForm() {
+  const router = useRouter()
   const [username, setUsername] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -27,16 +29,21 @@ export function AddFriendForm() {
       const data = await response.json()
 
       if (!response.ok) {
-        setError(data.error || 'Failed to send friend request')
+        if (response.status === 429) {
+          setError(data.message || 'Too many requests. Please try again later.')
+        } else {
+          setError(data.error || 'Failed to send friend request')
+        }
         setLoading(false)
         return
       }
 
       toast.success('Friend request sent!')
       setUsername('')
-      setTimeout(() => window.location.reload(), 1000)
-    } catch (error) {
+      router.refresh()
+    } catch {
       setError('An error occurred. Please try again.')
+    } finally {
       setLoading(false)
     }
   }

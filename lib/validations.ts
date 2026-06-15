@@ -31,7 +31,7 @@ export const createChallengeSchema = z.object({
     .min(10, 'Description must be at least 10 characters')
     .max(500, 'Description must be less than 500 characters'),
   category: z.enum(['FITNESS', 'SKILL', 'CREATIVITY', 'ADVENTURE', 'FUNNY'], {
-    errorMap: () => ({ message: 'Please select a valid category' }),
+    message: 'Please select a valid category',
   }),
   difficulty: z
     .number()

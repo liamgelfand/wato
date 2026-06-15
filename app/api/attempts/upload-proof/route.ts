@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       where: { id: attemptId },
     })
 
-    if (!attempt || attempt.userId !== (session.user as any).id) {
+    if (!attempt || attempt.userId !== session.user.id) {
       return NextResponse.json(
         { error: 'Attempt not found or unauthorized' },
         { status: 404 }

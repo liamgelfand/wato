@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { createChallengeSchema } from '@/lib/validations'
-import { validateChallengeContent, calculateChallengePoints } from '@/lib/moderation'
+import { validateChallengeContent } from '@/lib/moderation'
+import { calculateChallengePoints } from '@/lib/points'
 
 export async function POST(request: Request) {
   try {
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
     const validation = createChallengeSchema.safeParse(body)
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.errors[0].message },
+        { error: validation.error.issues[0].message },
         { status: 400 }
       )
     }
@@ -43,12 +44,13 @@ export async function POST(request: Request) {
     }
 
     // Calculate points
-    const points = calculateChallengePoints(difficulty)
+    const basePoints = 10
+    const points = calculateChallengePoints(basePoints, difficulty)
 
     // Create challenge
     const challenge = await prisma.challenge.create({
       data: {
-        creatorId: (session.user as any).id,
+        creatorId: session.user.id,
         title,
         description,
         category: category as any,

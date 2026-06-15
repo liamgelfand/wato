@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Zap } from 'lucide-react'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -18,6 +19,7 @@ export default function RegisterPage() {
     username: '',
     name: '',
     password: '',
+    confirmPassword: '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,11 +27,22 @@ export default function RegisterPage() {
     setLoading(true)
     setError('')
 
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match')
+      setLoading(false)
+      return
+    }
+
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          email: formData.email,
+          username: formData.username,
+          name: formData.name || undefined,
+          password: formData.password,
+        }),
       })
 
       const data = await response.json()
@@ -40,20 +53,22 @@ export default function RegisterPage() {
         return
       }
 
-      // Redirect to login
       router.push('/login?registered=true')
-    } catch (error) {
+    } catch {
       setError('An error occurred. Please try again.')
       setLoading(false)
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-accent/20 to-primary/10 p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
-          <CardDescription>Start your DareScore journey today</CardDescription>
+        <CardHeader className="space-y-1 text-center">
+          <div className="flex justify-center mb-2">
+            <Zap className="h-10 w-10 text-primary" />
+          </div>
+          <CardTitle className="text-2xl font-bold">Join Wato</CardTitle>
+          <CardDescription>Dare your friends. Earn your points.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -88,12 +103,12 @@ export default function RegisterPage() {
                 disabled={loading}
               />
               <p className="text-xs text-muted-foreground">
-                3-20 characters, letters, numbers, and underscores only
+                3–20 characters, letters, numbers, and underscores only
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="name">Name (Optional)</Label>
+              <Label htmlFor="name">Name (optional)</Label>
               <Input
                 id="name"
                 type="text"
@@ -117,6 +132,25 @@ export default function RegisterPage() {
               <p className="text-xs text-muted-foreground">At least 8 characters</p>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                required
+                disabled={loading}
+              />
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              By signing up you agree to our{' '}
+              <Link href="/legal/terms" className="text-primary hover:underline">Terms</Link>
+              {' '}and{' '}
+              <Link href="/legal/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
+            </p>
+
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Creating account...' : 'Create account'}
             </Button>
@@ -124,7 +158,7 @@ export default function RegisterPage() {
 
           <div className="mt-4 text-center text-sm">
             Already have an account?{' '}
-            <Link href="/login" className="text-blue-600 hover:underline">
+            <Link href="/login" className="text-primary hover:underline font-medium">
               Sign in
             </Link>
           </div>

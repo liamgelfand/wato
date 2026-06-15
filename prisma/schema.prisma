@@ -1,4 +1,4 @@
-// DareScore - Social Challenge App Schema
+// Wato - Social Challenge App Schema
 
 generator client {
   provider = "prisma-client-js"
@@ -156,7 +156,6 @@ model Challenge {
   
   creator     User              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   attempts    Attempt[]
-  reports     Report[]
   
   @@index([creatorId])
   @@index([status])
@@ -179,7 +178,6 @@ model Attempt {
   challenge       Challenge             @relation(fields: [challengeId], references: [id], onDelete: Cascade)
   verificationVotes VerificationVote[]
   pointsLedger    PointsLedger?
-  reports         Report[]
   
   @@index([userId])
   @@index([challengeId])
@@ -265,8 +263,6 @@ model Report {
   updatedAt   DateTime          @updatedAt
   
   reporter    User              @relation(fields: [reporterId], references: [id], onDelete: Cascade)
-  challenge   Challenge?        @relation(fields: [targetId], references: [id], onDelete: Cascade, map: "Report_challenge_fkey")
-  attempt     Attempt?          @relation(fields: [targetId], references: [id], onDelete: Cascade, map: "Report_attempt_fkey")
   
   @@index([reporterId])
   @@index([targetType, targetId])

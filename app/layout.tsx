@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Outfit } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/providers/session-provider";
-import { Navbar } from "@/components/layout/navbar";
-import { MobileNav } from "@/components/layout/mobile-nav";
+import { ThemeProvider } from "@/components/providers/theme-provider";
+import { AppShell } from "@/components/layout/app-shell";
 import { Toaster } from "@/components/ui/sonner";
 
-const inter = Inter({ subsets: ["latin"] });
+const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
 export const metadata: Metadata = {
-  title: "DareScore - Social Challenge App",
-  description: "Complete challenges, earn points, and compete with friends",
+  title: "Wato — Dare Your Friends",
+  description: "Complete challenges, earn points, and compete with friends on Wato",
 };
 
 export default function RootLayout({
@@ -20,15 +20,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <AuthProvider>
-          <Navbar />
-          <main className="min-h-[calc(100vh-4rem)] pb-20 md:pb-0">
-            {children}
-          </main>
-          <MobileNav />
-          <Toaster />
-        </AuthProvider>
+      <body className={`${outfit.variable} font-sans antialiased`}>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppShell>{children}</AppShell>
+            <Toaster />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

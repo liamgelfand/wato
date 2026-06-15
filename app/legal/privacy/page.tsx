@@ -1,8 +1,8 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | DareScore',
-  description: 'Privacy Policy for DareScore',
+  title: 'Privacy Policy | Wato',
+  description: 'Privacy Policy for Wato',
 }
 
 export default function PrivacyPolicyPage() {
@@ -18,7 +18,7 @@ export default function PrivacyPolicyPage() {
         <section>
           <h2 className="text-2xl font-semibold mt-8 mb-4">1. Introduction</h2>
           <p>
-            Welcome to DareScore ("we," "our," or "us"). We are committed to protecting your personal information
+            Welcome to Wato ("we," "our," or "us"). We are committed to protecting your personal information
             and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard
             your information when you use our platform.
           </p>

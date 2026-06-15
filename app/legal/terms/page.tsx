@@ -1,8 +1,8 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Terms of Service | DareScore',
-  description: 'Terms of Service for DareScore',
+  title: 'Terms of Service | Wato',
+  description: 'Terms of Service for Wato',
 }
 
 export default function TermsOfServicePage() {
@@ -18,7 +18,7 @@ export default function TermsOfServicePage() {
         <section>
           <h2 className="text-2xl font-semibold mt-8 mb-4">1. Acceptance of Terms</h2>
           <p>
-            By accessing and using DareScore ("the Service"), you accept and agree to be bound by the terms
+            By accessing and using Wato ("the Service"), you accept and agree to be bound by the terms
             and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
           </p>
         </section>
@@ -26,14 +26,14 @@ export default function TermsOfServicePage() {
         <section>
           <h2 className="text-2xl font-semibold mt-8 mb-4">2. Use License</h2>
           <p>
-            Permission is granted to temporarily access the materials (information or software) on DareScore's
+            Permission is granted to temporarily access the materials (information or software) on Wato's
             platform for personal, non-commercial use only. This is the grant of a license, not a transfer of title.
           </p>
           <p>Under this license you may not:</p>
           <ul className="list-disc pl-6 space-y-2">
             <li>Modify or copy the materials</li>
             <li>Use the materials for any commercial purpose</li>
-            <li>Attempt to reverse engineer any software contained on DareScore</li>
+            <li>Attempt to reverse engineer any software contained on Wato</li>
             <li>Remove any copyright or other proprietary notations from the materials</li>
             <li>Transfer the materials to another person or "mirror" the materials on any other server</li>
           </ul>
@@ -56,7 +56,7 @@ export default function TermsOfServicePage() {
         <section>
           <h2 className="text-2xl font-semibold mt-8 mb-4">4. Safety Guidelines</h2>
           <p>
-            DareScore is designed for safe, legal challenges only. Users must:
+            Wato is designed for safe, legal challenges only. Users must:
           </p>
           <ul className="list-disc pl-6 space-y-2">
             <li>Only create and attempt challenges that are safe and legal</li>
@@ -65,7 +65,7 @@ export default function TermsOfServicePage() {
             <li>Report any unsafe or inappropriate content immediately</li>
           </ul>
           <p className="font-semibold text-red-600 mt-4">
-            DareScore is NOT responsible for any injuries, damages, or consequences resulting from challenge attempts.
+            Wato is NOT responsible for any injuries, damages, or consequences resulting from challenge attempts.
             Participate at your own risk.
           </p>
         </section>
@@ -92,7 +92,7 @@ export default function TermsOfServicePage() {
         <section>
           <h2 className="text-2xl font-semibold mt-8 mb-4">7. Disclaimer</h2>
           <p>
-            The materials on DareScore are provided on an 'as is' basis. DareScore makes no warranties, expressed
+            The materials on Wato are provided on an 'as is' basis. Wato makes no warranties, expressed
             or implied, and hereby disclaims and negates all other warranties including, without limitation, implied
             warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of
             intellectual property or other violation of rights.
@@ -102,9 +102,9 @@ export default function TermsOfServicePage() {
         <section>
           <h2 className="text-2xl font-semibold mt-8 mb-4">8. Limitations</h2>
           <p>
-            In no event shall DareScore or its suppliers be liable for any damages (including, without limitation,
+            In no event shall Wato or its suppliers be liable for any damages (including, without limitation,
             damages for loss of data or profit, or due to business interruption) arising out of the use or inability
-            to use the materials on DareScore, even if DareScore or a DareScore authorized representative has been
+            to use the materials on Wato, even if Wato or a Wato authorized representative has been
             notified orally or in writing of the possibility of such damage.
           </p>
         </section>
@@ -112,7 +112,7 @@ export default function TermsOfServicePage() {
         <section>
           <h2 className="text-2xl font-semibold mt-8 mb-4">9. Changes to Terms</h2>
           <p>
-            DareScore may revise these terms of service at any time without notice. By using this platform you are
+            Wato may revise these terms of service at any time without notice. By using this platform you are
             agreeing to be bound by the then current version of these terms of service.
           </p>
         </section>

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Users } from 'lucide-react'
 import { AddFriendForm } from '@/components/friends/add-friend-form'
+import { MessageFriendButton } from '@/components/friends/message-friend-button'
 
 async function acceptFriendRequest(requestId: string) {
   'use server'
@@ -39,7 +40,7 @@ export default async function FriendsPage() {
     redirect('/login')
   }
 
-  const userId = (session.user as any).id
+  const userId = session.user.id
 
   // Get accepted friends
   const friends = await prisma.friendship.findMany({
@@ -167,6 +168,10 @@ export default async function FriendsPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline">{friend.totalPoints} pts</Badge>
+                          <MessageFriendButton
+                            friendId={friend.id}
+                            friendName={friend.name || friend.username}
+                          />
                           <form action={removeFriend.bind(null, friend.friendshipId)}>
                             <Button type="submit" variant="ghost" size="sm">
                               Unfriend

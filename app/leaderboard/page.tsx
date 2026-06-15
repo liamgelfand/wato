@@ -15,7 +15,7 @@ export default async function LeaderboardPage() {
     redirect('/login')
   }
 
-  const userId = (session.user as any).id
+  const userId = session.user.id
 
   // Get user's friends
   const friendships = await prisma.friendship.findMany({
@@ -112,7 +112,7 @@ export default async function LeaderboardPage() {
               key={user.id}
               className={cn(
                 'flex items-center justify-between p-4 rounded-lg border',
-                isCurrentUser && 'bg-blue-50 border-blue-200'
+                isCurrentUser && 'bg-primary/5 border-primary/20'
               )}
             >
               <div className="flex items-center gap-4">
@@ -132,7 +132,7 @@ export default async function LeaderboardPage() {
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-blue-600">{points}</p>
+                <p className="text-2xl font-bold text-primary">{points}</p>
                 <p className="text-xs text-muted-foreground">points</p>
               </div>
             </div>

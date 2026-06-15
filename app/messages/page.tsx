@@ -15,7 +15,7 @@ export default async function MessagesPage() {
     redirect('/login')
   }
 
-  const userId = (session.user as any).id
+  const userId = session.user.id
 
   // Get all threads involving the user
   const threads = await prisma.messageThread.findMany({

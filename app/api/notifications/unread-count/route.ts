@@ -10,7 +10,7 @@ export async function GET() {
       return NextResponse.json({ count: 0 })
     }
 
-    const count = await getUnreadCount((session.user as any).id)
+    const count = await getUnreadCount(session.user.id)
 
     return NextResponse.json({ count })
   } catch (error) {

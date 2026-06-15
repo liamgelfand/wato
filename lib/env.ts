@@ -17,10 +17,6 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
 
-  // Sentry (optional - for error tracking)
-  SENTRY_DSN: z.string().optional(),
-  NEXT_PUBLIC_SENTRY_DSN: z.string().optional(),
-
   // Storage
   STORAGE_PROVIDER: z.enum(['local', 's3']).default('local'),
   AWS_S3_BUCKET: z.string().optional(),
@@ -29,19 +25,33 @@ const envSchema = z.object({
   AWS_SECRET_ACCESS_KEY: z.string().optional(),
   S3_ENDPOINT: z.string().optional(),
 
+  // Rate limiting (optional — Upstash Redis for production multi-instance)
+  UPSTASH_REDIS_REST_URL: z.string().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+
   // App
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 })
 
 // Validate environment variables
 function validateEnv() {
-  // Skip validation in test environment to allow easier testing
   if (process.env.NODE_ENV === 'test') {
     return envSchema.parse({
       DATABASE_URL: process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/test',
       NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || 'test-secret-32-characters-long!!!',
       NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3000',
       NODE_ENV: 'test',
+      STORAGE_PROVIDER: 'local',
+    })
+  }
+
+  // Skip strict validation during Next.js build (env vars set at runtime)
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return envSchema.parse({
+      DATABASE_URL: process.env.DATABASE_URL || 'postgresql://build:build@localhost:5432/build',
+      NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || 'build-time-placeholder-secret-32chars!!',
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+      NODE_ENV: 'production',
       STORAGE_PROVIDER: 'local',
     })
   }

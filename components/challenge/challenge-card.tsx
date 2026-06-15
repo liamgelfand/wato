@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Trophy, Calendar } from 'lucide-react'
+import { CATEGORY_COLORS, CATEGORY_LABELS, type ChallengeCategoryName } from '@/lib/categories'
 
 interface ChallengeCardProps {
   challenge: {
@@ -23,18 +24,13 @@ interface ChallengeCardProps {
   }
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  FITNESS: 'bg-green-100 text-green-800',
-  SKILL: 'bg-blue-100 text-blue-800',
-  CREATIVITY: 'bg-purple-100 text-purple-800',
-  ADVENTURE: 'bg-orange-100 text-orange-800',
-  FUNNY: 'bg-pink-100 text-pink-800',
-}
-
-export default function ChallengeCard({ challenge }: ChallengeCardProps) {
+export function ChallengeCard({ challenge }: ChallengeCardProps) {
   const creatorInitials = challenge.creator.name
-    ? challenge.creator.name.split(' ').map(n => n[0]).join('').toUpperCase()
+    ? challenge.creator.name.split(' ').map((n) => n[0]).join('').toUpperCase()
     : challenge.creator.username.substring(0, 2).toUpperCase()
+
+  const categoryKey = challenge.category as ChallengeCategoryName
+  const categoryColor = CATEGORY_COLORS[categoryKey] || 'bg-muted text-muted-foreground'
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -42,7 +38,7 @@ export default function ChallengeCard({ challenge }: ChallengeCardProps) {
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1">
             <Link href={`/challenge/${challenge.id}`}>
-              <h3 className="font-semibold text-lg hover:text-blue-600 cursor-pointer">
+              <h3 className="font-semibold text-lg hover:text-primary cursor-pointer transition-colors">
                 {challenge.title}
               </h3>
             </Link>
@@ -54,11 +50,12 @@ export default function ChallengeCard({ challenge }: ChallengeCardProps) {
       </CardHeader>
       <CardContent>
         <div className="flex flex-wrap gap-2">
-          <Badge className={CATEGORY_COLORS[challenge.category] || 'bg-gray-100 text-gray-800'}>
-            {challenge.category.toLowerCase()}
+          <Badge className={categoryColor}>
+            {CATEGORY_LABELS[categoryKey] || challenge.category.toLowerCase()}
           </Badge>
           <Badge variant="secondary">
-            {'⭐'.repeat(challenge.difficulty)} {challenge.difficulty}/5
+            {'★'.repeat(challenge.difficulty)}
+            <span className="ml-1">{challenge.difficulty}/5</span>
           </Badge>
           <Badge variant="outline" className="flex items-center gap-1">
             <Trophy className="h-3 w-3" />
@@ -81,11 +78,11 @@ export default function ChallengeCard({ challenge }: ChallengeCardProps) {
           </span>
         </div>
         <Button size="sm" asChild>
-          <Link href={`/challenge/${challenge.id}`}>
-            Attempt
-          </Link>
+          <Link href={`/challenge/${challenge.id}`}>Attempt</Link>
         </Button>
       </CardFooter>
     </Card>
   )
 }
+
+export default ChallengeCard

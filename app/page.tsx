@@ -1,20 +1,20 @@
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { ChallengeCard } from '@/components/challenge/challenge-card'
+import { CategoryFilter } from '@/components/challenge/category-filter'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import Link from 'next/link'
 import { PlusCircle } from 'lucide-react'
 
 interface PageProps {
-  searchParams: { category?: string }
+  searchParams: Promise<{ category?: string }>
+}
+
+function FilterSkeleton() {
+  return <Skeleton className="h-10 w-[200px]" />
 }
 
 export default async function HomePage({ searchParams }: PageProps) {
@@ -24,12 +24,13 @@ export default async function HomePage({ searchParams }: PageProps) {
     redirect('/login')
   }
 
-  const category = searchParams.category || 'ALL'
+  const params = await searchParams
+  const category = params.category || 'ALL'
 
   const challenges = await prisma.challenge.findMany({
     where: {
       status: 'ACTIVE',
-      ...(category !== 'ALL' && { category: category as any }),
+      ...(category !== 'ALL' && { category: category as 'FITNESS' | 'SKILL' | 'CREATIVITY' | 'ADVENTURE' | 'FUNNY' }),
     },
     include: {
       creator: {
@@ -40,15 +41,13 @@ export default async function HomePage({ searchParams }: PageProps) {
         },
       },
     },
-    orderBy: {
-      createdAt: 'desc',
-    },
+    orderBy: { createdAt: 'desc' },
     take: 20,
   })
 
   return (
     <div className="container mx-auto max-w-4xl p-4">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold">Challenge Feed</h1>
           <p className="text-muted-foreground">
@@ -64,21 +63,9 @@ export default async function HomePage({ searchParams }: PageProps) {
       </div>
 
       <div className="mb-6">
-        <form action="/" method="get">
-          <Select name="category" defaultValue={category}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Filter by category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Categories</SelectItem>
-              <SelectItem value="FITNESS">Fitness</SelectItem>
-              <SelectItem value="SKILL">Skill</SelectItem>
-              <SelectItem value="CREATIVITY">Creativity</SelectItem>
-              <SelectItem value="ADVENTURE">Adventure</SelectItem>
-              <SelectItem value="FUNNY">Funny</SelectItem>
-            </SelectContent>
-          </Select>
-        </form>
+        <Suspense fallback={<FilterSkeleton />}>
+          <CategoryFilter currentCategory={category} />
+        </Suspense>
       </div>
 
       {challenges.length === 0 ? (

@@ -5,33 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ReportDialog } from '@/components/moderation/report-dialog'
 import { Trophy, Calendar } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import Link from 'next/link'
+import { CATEGORY_COLORS, CATEGORY_LABELS, type ChallengeCategoryName } from '@/lib/categories'
 
 interface PageProps {
-  params: { id: string }
-}
-
-const CATEGORY_COLORS: Record<string, string> = {
-  FITNESS: 'bg-green-100 text-green-800',
-  SKILL: 'bg-blue-100 text-blue-800',
-  CREATIVITY: 'bg-purple-100 text-purple-800',
-  ADVENTURE: 'bg-orange-100 text-orange-800',
-  FUNNY: 'bg-pink-100 text-pink-800',
+  params: Promise<{ id: string }>
 }
 
 async function attemptChallenge(challengeId: string, userId: string) {
   'use server'
-  
+
   const attempt = await prisma.attempt.create({
-    data: {
-      userId,
-      challengeId,
-      status: 'DRAFT',
-    },
+    data: { userId, challengeId, status: 'DRAFT' },
   })
-  
+
   redirect(`/attempt/${attempt.id}`)
 }
 
@@ -42,27 +32,18 @@ export default async function ChallengePage({ params }: PageProps) {
     redirect('/login')
   }
 
+  const { id } = await params
+
   const challenge = await prisma.challenge.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       creator: {
-        select: {
-          id: true,
-          username: true,
-          name: true,
-          avatarUrl: true,
-        },
+        select: { id: true, username: true, name: true, avatarUrl: true },
       },
       attempts: {
         where: { status: 'APPROVED' },
         include: {
-          user: {
-            select: {
-              username: true,
-              name: true,
-              avatarUrl: true,
-            },
-          },
+          user: { select: { username: true, name: true, avatarUrl: true } },
         },
         orderBy: { createdAt: 'desc' },
         take: 10,
@@ -75,10 +56,11 @@ export default async function ChallengePage({ params }: PageProps) {
   }
 
   const creatorInitials = challenge.creator.name
-    ? challenge.creator.name.split(' ').map(n => n[0]).join('').toUpperCase()
+    ? challenge.creator.name.split(' ').map((n) => n[0]).join('').toUpperCase()
     : challenge.creator.username.substring(0, 2).toUpperCase()
 
-  const attemptAction = attemptChallenge.bind(null, challenge.id, (session.user as any).id)
+  const attemptAction = attemptChallenge.bind(null, challenge.id, session.user.id)
+  const categoryKey = challenge.category as ChallengeCategoryName
 
   return (
     <div className="container mx-auto max-w-4xl p-4">
@@ -89,15 +71,16 @@ export default async function ChallengePage({ params }: PageProps) {
               <CardTitle className="text-3xl mb-2">{challenge.title}</CardTitle>
               <p className="text-muted-foreground">{challenge.description}</p>
             </div>
+            <ReportDialog targetType="CHALLENGE" targetId={challenge.id} />
           </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2 mb-6">
-            <Badge className={CATEGORY_COLORS[challenge.category]}>
-              {challenge.category.toLowerCase()}
+            <Badge className={CATEGORY_COLORS[categoryKey]}>
+              {CATEGORY_LABELS[categoryKey]}
             </Badge>
             <Badge variant="secondary">
-              {'⭐'.repeat(challenge.difficulty)} {challenge.difficulty}/5
+              {'★'.repeat(challenge.difficulty)} {challenge.difficulty}/5
             </Badge>
             <Badge variant="outline" className="flex items-center gap-1">
               <Trophy className="h-3 w-3" />
@@ -141,9 +124,9 @@ export default async function ChallengePage({ params }: PageProps) {
             <div className="space-y-4">
               {challenge.attempts.map((attempt) => {
                 const userInitials = attempt.user.name
-                  ? attempt.user.name.split(' ').map(n => n[0]).join('').toUpperCase()
+                  ? attempt.user.name.split(' ').map((n) => n[0]).join('').toUpperCase()
                   : attempt.user.username.substring(0, 2).toUpperCase()
-                  
+
                 return (
                   <div key={attempt.id} className="flex items-center justify-between border-b pb-4 last:border-0">
                     <div className="flex items-center gap-3">

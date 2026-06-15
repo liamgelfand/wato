@@ -70,8 +70,8 @@ export default function CreateChallengePage() {
 
   return (
     <div className="container mx-auto max-w-2xl p-4">
-      <Alert className="mb-6 border-blue-200 bg-blue-50">
-        <Shield className="h-4 w-4 text-blue-600" />
+      <Alert className="mb-6 border-primary/20 bg-primary/5">
+        <Shield className="h-4 w-4 text-primary" />
         <AlertDescription className="text-sm">
           <strong>Safety First:</strong> All challenges must be safe and appropriate. 
           Prohibited content includes: alcohol, drugs, self-harm, violence, weapons, 
@@ -166,7 +166,7 @@ export default function CreateChallengePage() {
                   max="5"
                   value={formData.difficulty}
                   onChange={(e) => setFormData({ ...formData, difficulty: parseInt(e.target.value) })}
-                  className="w-full"
+                  className="wato-range w-full"
                   disabled={loading}
                 />
                 <p className="text-xs text-muted-foreground">

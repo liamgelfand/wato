@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -11,12 +11,10 @@ import { Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
 
-interface PageProps {
-  params: { threadId: string }
-}
-
-export default function ThreadPage({ params }: PageProps) {
+export default function ThreadPage() {
   const router = useRouter()
+  const params = useParams<{ threadId: string }>()
+  const threadId = params.threadId
   const { data: session, status } = useSession()
   const [thread, setThread] = useState<any>(null)
   const [messages, setMessages] = useState<any[]>([])
@@ -35,7 +33,7 @@ export default function ThreadPage({ params }: PageProps) {
       const interval = setInterval(fetchThread, 5000) // Poll every 5s
       return () => clearInterval(interval)
     }
-  }, [status, params.threadId])
+  }, [status, threadId])
 
   useEffect(() => {
     scrollToBottom()
@@ -47,7 +45,7 @@ export default function ThreadPage({ params }: PageProps) {
 
   const fetchThread = async () => {
     try {
-      const response = await fetch(`/api/messages/${params.threadId}`)
+      const response = await fetch(`/api/messages/${threadId}`)
       if (!response.ok) throw new Error('Failed to fetch thread')
       const data = await response.json()
       setThread(data.thread)
@@ -64,7 +62,7 @@ export default function ThreadPage({ params }: PageProps) {
     setLoading(true)
 
     try {
-      const response = await fetch(`/api/messages/${params.threadId}/send`, {
+      const response = await fetch(`/api/messages/${threadId}/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ body: messageBody }),
@@ -89,7 +87,7 @@ export default function ThreadPage({ params }: PageProps) {
     )
   }
 
-  const otherUser = thread.userAId === (session.user as any).id ? thread.userB : thread.userA
+  const otherUser = thread.userAId === session.user.id ? thread.userB : thread.userA
   const initials = otherUser.name
     ? otherUser.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
     : otherUser.username.substring(0, 2).toUpperCase()
@@ -117,7 +115,7 @@ export default function ThreadPage({ params }: PageProps) {
             </div>
           ) : (
             messages.map((message) => {
-              const isOwnMessage = message.senderId === (session.user as any).id
+              const isOwnMessage = message.senderId === session.user.id
               return (
                 <div
                   key={message.id}
@@ -127,7 +125,7 @@ export default function ThreadPage({ params }: PageProps) {
                     <div
                       className={`inline-block p-3 rounded-lg ${
                         isOwnMessage
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-primary text-primary-foreground'
                           : 'bg-gray-100 text-gray-900'
                       }`}
                     >

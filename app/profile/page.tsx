@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { getUserBadges } from '@/lib/badges'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -13,15 +14,13 @@ export default async function ProfilePage() {
   }
 
   const user = await prisma.user.findUnique({
-    where: { id: (session.user as any).id },
+    where: { id: session.user.id },
     include: {
       attempts: {
         where: { status: 'APPROVED' },
         orderBy: { createdAt: 'desc' },
         take: 10,
-        include: {
-          challenge: true,
-        },
+        include: { challenge: true },
       },
       challenges: {
         where: { status: 'ACTIVE' },
@@ -35,8 +34,10 @@ export default async function ProfilePage() {
     redirect('/login')
   }
 
+  const badges = await getUserBadges(user.id)
+
   const initials = user.name
-    ? user.name.split(' ').map(n => n[0]).join('').toUpperCase()
+    ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase()
     : user.username.substring(0, 2).toUpperCase()
 
   return (
@@ -57,7 +58,7 @@ export default async function ProfilePage() {
         <CardContent>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600">{user.totalPoints}</div>
+              <div className="text-3xl font-bold text-primary">{user.totalPoints}</div>
               <div className="text-sm text-muted-foreground">Total Points</div>
             </div>
             <div className="text-center">
@@ -69,12 +70,33 @@ export default async function ProfilePage() {
               <div className="text-sm text-muted-foreground">Created</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold">0</div>
+              <div className="text-3xl font-bold">{badges.length}</div>
               <div className="text-sm text-muted-foreground">Badges</div>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {badges.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Badges</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {badges.map((badge) => (
+                <div key={badge.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                  <span className="text-2xl" role="img" aria-label={badge.name}>{badge.icon}</span>
+                  <div>
+                    <p className="font-medium text-sm">{badge.name}</p>
+                    <p className="text-xs text-muted-foreground">{badge.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

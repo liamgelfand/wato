@@ -1,70 +1,65 @@
-version: '3.9'
+# Wato — Docker Compose
+#
+# Local development (database only, app runs on host with hot reload):
+#   docker compose up db -d
+#   npm run dev
+#
+# Full stack in containers (production-like):
+#   docker compose --profile prod up -d --build
 
 services:
-  # PostgreSQL Database
   db:
-    image: postgres:14-alpine
-    container_name: darescore-db
+    image: postgres:16-alpine
+    container_name: wato-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_DB: ${POSTGRES_DB:-darescore}
+      POSTGRES_DB: ${POSTGRES_DB:-wato}
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-wato}"]
+      interval: 5s
       timeout: 5s
-      retries: 5
-    networks:
-      - darescore-network
+      retries: 10
 
-  # Next.js Application
   app:
+    profiles: ["prod"]
     build:
       context: .
       dockerfile: Dockerfile
-      target: runner
-    container_name: darescore-app
+    container_name: wato-app
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-darescore}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-wato}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?Set NEXTAUTH_SECRET in .env}
       STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
-      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
-      AWS_S3_REGION: ${AWS_S3_REGION}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      S3_ENDPOINT: ${S3_ENDPOINT}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+      AWS_S3_REGION: ${AWS_S3_REGION:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
     ports:
       - "${APP_PORT:-3000}:3000"
     volumes:
       - app_uploads:/app/public/uploads
-    networks:
-      - darescore-network
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
-
-networks:
-  darescore-network:
-    driver: bridge
+      start_period: 60s
 
 volumes:
   postgres_data:
-    driver: local
   app_uploads:
-    driver: local

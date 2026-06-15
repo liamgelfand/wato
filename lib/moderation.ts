@@ -1,4 +1,4 @@
-// Content moderation and safety utilities for DareScore
+// Content moderation and safety utilities for Wato
 
 // Banned categories
 export const BANNED_CATEGORIES = [
@@ -126,10 +126,10 @@ export function validateChallengeContent(data: {
 }
 
 export const SAFETY_GUIDELINES = `
-## DareScore Safety Guidelines
+## Wato Safety Guidelines
 
 ### Our Commitment
-DareScore is dedicated to providing a safe, positive, and fun environment for all users to participate in challenges.
+Wato is dedicated to providing a safe, positive, and fun environment for all users to participate in challenges.
 
 ### Prohibited Content
 The following types of challenges and content are strictly prohibited:

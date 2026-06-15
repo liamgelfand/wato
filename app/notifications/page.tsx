@@ -28,7 +28,7 @@ export default async function NotificationsPage() {
     redirect('/login')
   }
 
-  const userId = (session.user as any).id
+  const userId = session.user.id
 
   const notifications = await prisma.notification.findMany({
     where: { userId },
@@ -45,7 +45,9 @@ export default async function NotificationsPage() {
       case 'CHALLENGE':
         return `/challenge/${notification.referenceId}`
       case 'MESSAGE':
-        return `/messages`
+        return notification.referenceId
+          ? `/messages/${notification.referenceId}`
+          : '/messages'
       case 'FRIENDSHIP':
         return `/friends`
       default:
@@ -86,12 +88,12 @@ export default async function NotificationsPage() {
               <Link
                 key={notification.id}
                 href={getNotificationLink(notification)}
-                className={`block p-4 hover:bg-gray-50 transition-colors ${
-                  !notification.read ? 'bg-blue-50' : ''
+                className={`block p-4 hover:bg-muted/50 transition-colors ${
+                  !notification.read ? 'bg-primary/5' : ''
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  <Bell className={`h-5 w-5 mt-1 ${!notification.read ? 'text-blue-600' : 'text-gray-400'}`} />
+                  <Bell className={`h-5 w-5 mt-1 ${!notification.read ? 'text-primary' : 'text-muted-foreground'}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-semibold">{notification.title}</p>

@@ -4,9 +4,10 @@ import { prisma } from '@/lib/db'
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await auth()
 
     if (!session?.user) {
@@ -17,7 +18,7 @@ export async function GET(
     }
 
     const attempt = await prisma.attempt.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         challenge: {
           select: {

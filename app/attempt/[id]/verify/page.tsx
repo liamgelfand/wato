@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -13,11 +13,13 @@ import { CheckCircle, XCircle, Trophy } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface PageProps {
-  params: { id: string }
+  params?: { id: string }
 }
 
-export default function VerifyAttemptPage({ params }: PageProps) {
+export default function VerifyAttemptPage(_props: PageProps) {
   const router = useRouter()
+  const params = useParams<{ id: string }>()
+  const attemptId = params.id
   const { data: session, status } = useSession()
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
@@ -38,7 +40,7 @@ export default function VerifyAttemptPage({ params }: PageProps) {
 
   const fetchAttempt = async () => {
     try {
-      const response = await fetch(`/api/attempts/${params.id}`)
+      const response = await fetch(`/api/attempts/${attemptId}`)
       if (!response.ok) {
         throw new Error('Failed to fetch attempt')
       }
@@ -56,7 +58,7 @@ export default function VerifyAttemptPage({ params }: PageProps) {
     setError('')
 
     try {
-      const response = await fetch(`/api/attempts/${params.id}/verify`, {
+      const response = await fetch(`/api/attempts/${attemptId}/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -74,7 +76,7 @@ export default function VerifyAttemptPage({ params }: PageProps) {
       }
 
       toast.success(vote === 'VERIFY' ? 'Attempt verified!' : 'Attempt rejected')
-      router.push(`/attempt/${params.id}`)
+      router.push(`/attempt/${attemptId}`)
     } catch (error) {
       setError('An error occurred. Please try again.')
       setLoading(false)

@@ -4,15 +4,12 @@ import GoogleProvider from 'next-auth/providers/google'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from './db'
 import bcrypt from 'bcryptjs'
+import type { UserRole } from '@prisma/client'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma) as any,
-  session: {
-    strategy: 'jwt',
-  },
-  pages: {
-    signIn: '/login',
-  },
+  adapter: PrismaAdapter(prisma) as never,
+  session: { strategy: 'jwt' },
+  pages: { signIn: '/login' },
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -26,9 +23,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email,
-          },
+          where: { email: credentials.email as string },
         })
 
         if (!user || !user.password) {
@@ -36,7 +31,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         const isCorrectPassword = await bcrypt.compare(
-          credentials.password,
+          credentials.password as string,
           user.password
         )
 
@@ -50,6 +45,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: user.name,
           username: user.username,
           role: user.role,
+          avatarUrl: user.avatarUrl,
         }
       },
     }),
@@ -65,17 +61,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id
-        token.username = (user as any).username
-        token.role = (user as any).role
+        token.id = user.id!
+        token.username = user.username
+        token.role = user.role as UserRole
+        token.avatarUrl = user.avatarUrl
       }
       return token
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id
-        (session.user as any).username = token.username
-        (session.user as any).role = token.role
+        session.user.id = token.id
+        session.user.username = token.username
+        session.user.role = token.role
+        session.user.avatarUrl = token.avatarUrl
       }
       return session
     },

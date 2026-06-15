@@ -4,23 +4,25 @@ import { prisma } from '@/lib/db'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ProofUploader } from '@/components/attempt/proof-uploader'
+import { ReportDialog } from '@/components/moderation/report-dialog'
 import { Trophy } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
 interface PageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function AttemptPage({ params }: PageProps) {
   const session = await auth()
+  const { id } = await params
 
   if (!session?.user) {
     redirect('/login')
   }
 
   const attempt = await prisma.attempt.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       challenge: {
         include: {
@@ -50,31 +52,34 @@ export default async function AttemptPage({ params }: PageProps) {
   }
 
   // Check if user owns this attempt
-  if (attempt.userId !== (session.user as any).id) {
+  if (attempt.userId !== session.user.id) {
     // Allow viewing if attempt is approved
     if (attempt.status !== 'APPROVED') {
       redirect('/')
     }
   }
 
-  const isOwner = attempt.userId === (session.user as any).id
+  const isOwner = attempt.userId === session.user.id
 
   return (
     <div className="container mx-auto max-w-3xl p-4">
       <Card className="mb-6">
         <CardHeader>
-          <div className="flex items-center gap-2 mb-2">
-            <Badge variant={
-              attempt.status === 'APPROVED' ? 'default' :
-              attempt.status === 'PENDING' ? 'secondary' :
-              attempt.status === 'REJECTED' ? 'destructive' : 'outline'
-            }>
-              {attempt.status}
-            </Badge>
-            <Badge variant="outline" className="flex items-center gap-1">
-              <Trophy className="h-3 w-3" />
-              {attempt.challenge.points} points
-            </Badge>
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2">
+              <Badge variant={
+                attempt.status === 'APPROVED' ? 'default' :
+                attempt.status === 'PENDING' ? 'secondary' :
+                attempt.status === 'REJECTED' ? 'destructive' : 'outline'
+              }>
+                {attempt.status}
+              </Badge>
+              <Badge variant="outline" className="flex items-center gap-1">
+                <Trophy className="h-3 w-3" />
+                {attempt.challenge.points} points
+              </Badge>
+            </div>
+            <ReportDialog targetType="ATTEMPT" targetId={attempt.id} />
           </div>
           <CardTitle>{attempt.challenge.title}</CardTitle>
           <CardDescription>{attempt.challenge.description}</CardDescription>
@@ -90,10 +95,7 @@ export default async function AttemptPage({ params }: PageProps) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ProofUploader
-              attemptId={attempt.id}
-              onUploadSuccess={() => window.location.reload()}
-            />
+            <ProofUploader attemptId={attempt.id} />
           </CardContent>
         </Card>
       )}
@@ -152,7 +154,7 @@ export default async function AttemptPage({ params }: PageProps) {
       {attempt.status === 'APPROVED' && (
         <Card>
           <CardHeader>
-            <CardTitle>✅ Challenge Completed!</CardTitle>
+            <CardTitle>Challenge Completed!</CardTitle>
             <CardDescription>
               This attempt has been verified and approved
             </CardDescription>
@@ -167,8 +169,8 @@ export default async function AttemptPage({ params }: PageProps) {
                 )}
               </div>
             )}
-            <p className="text-lg font-semibold text-green-600">
-              +{attempt.challenge.points} points earned! 🎉
+            <p className="text-lg font-semibold text-success">
+              +{attempt.challenge.points} points earned!
             </p>
           </CardContent>
         </Card>
@@ -177,7 +179,7 @@ export default async function AttemptPage({ params }: PageProps) {
       {attempt.status === 'REJECTED' && isOwner && (
         <Card>
           <CardHeader>
-            <CardTitle>❌ Attempt Rejected</CardTitle>
+            <CardTitle>Attempt Rejected</CardTitle>
             <CardDescription>
               This attempt did not meet the challenge requirements
             </CardDescription>

@@ -6,9 +6,10 @@ import { createNotification } from '@/lib/notifications'
 
 export async function POST(
   request: Request,
-  { params }: { params: { threadId: string } }
+  { params }: { params: Promise<{ threadId: string }> }
 ) {
   try {
+    const { threadId: routeThreadId } = await params
     const session = await auth()
 
     if (!session?.user) {
@@ -18,17 +19,17 @@ export async function POST(
       )
     }
 
-    const userId = (session.user as any).id
+    const userId = session.user.id
     const body = await request.json()
     
     const validation = sendMessageSchema.safeParse({
-      threadId: params.threadId,
+      threadId: routeThreadId,
       ...body,
     })
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.errors[0].message },
+        { error: validation.error.issues[0].message },
         { status: 400 }
       )
     }
@@ -77,7 +78,7 @@ export async function POST(
       referenceType: 'MESSAGE',
       referenceId: message.id,
       title: 'New message',
-      body: `${(session.user as any).username} sent you a message`,
+      body: `${session.user.username} sent you a message`,
     })
 
     return NextResponse.json(message, { status: 201 })

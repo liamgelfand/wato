@@ -4,9 +4,10 @@ import { prisma } from '@/lib/db'
 
 export async function GET(
   request: Request,
-  { params }: { params: { threadId: string } }
+  { params }: { params: Promise<{ threadId: string }> }
 ) {
   try {
+    const { threadId } = await params
     const session = await auth()
 
     if (!session?.user) {
@@ -16,10 +17,10 @@ export async function GET(
       )
     }
 
-    const userId = (session.user as any).id
+    const userId = session.user.id
 
     const thread = await prisma.messageThread.findUnique({
-      where: { id: params.threadId },
+      where: { id: threadId },
       include: {
         userA: {
           select: {
@@ -56,7 +57,7 @@ export async function GET(
     }
 
     const messages = await prisma.message.findMany({
-      where: { threadId: params.threadId },
+      where: { threadId },
       orderBy: { createdAt: 'asc' },
       include: {
         sender: {
@@ -72,7 +73,7 @@ export async function GET(
     // Mark messages as read
     await prisma.message.updateMany({
       where: {
-        threadId: params.threadId,
+        threadId,
         senderId: { not: userId },
         readAt: null,
       },

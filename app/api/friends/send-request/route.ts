@@ -20,13 +20,13 @@ export async function POST(request: Request) {
     const validation = sendFriendRequestSchema.safeParse(body)
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.errors[0].message },
+        { error: validation.error.issues[0].message },
         { status: 400 }
       )
     }
 
     const { username } = validation.data
-    const userId = (session.user as any).id
+    const userId = session.user.id
 
     // Find user by username
     const targetUser = await prisma.user.findUnique({
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
       referenceType: 'FRIENDSHIP',
       referenceId: friendship.id,
       title: 'New friend request',
-      body: `${(session.user as any).username} sent you a friend request`,
+      body: `${session.user.username} sent you a friend request`,
     })
 
     return NextResponse.json({ success: true }, { status: 201 })

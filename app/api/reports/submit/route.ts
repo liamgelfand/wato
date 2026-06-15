@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     const validation = submitReportSchema.safeParse(body)
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.errors[0].message },
+        { error: validation.error.issues[0].message },
         { status: 400 }
       )
     }
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     // Create report
     await prisma.report.create({
       data: {
-        reporterId: (session.user as any).id,
+        reporterId: session.user.id,
         targetType: targetType as any,
         targetId,
         reason,

@@ -1,52 +1,58 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Upload, X, Image as ImageIcon, Video } from 'lucide-react'
+import { Upload, X, Image as ImageIcon, Video, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface ProofUploaderProps {
   attemptId: string
-  onUploadSuccess: () => void
 }
 
-export function ProofUploader({ attemptId, onUploadSuccess }: ProofUploaderProps) {
+export function ProofUploader({ attemptId }: ProofUploaderProps) {
+  const router = useRouter()
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [dragging, setDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0]
-    if (!selectedFile) return
-
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime', 'video/webm']
+  const processFile = useCallback((selectedFile: File) => {
+    const validTypes = [
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+      'video/mp4', 'video/quicktime', 'video/webm',
+    ]
     if (!validTypes.includes(selectedFile.type)) {
       toast.error('Invalid file type. Please upload an image or video.')
       return
     }
-
-    // Validate file size (50MB)
     if (selectedFile.size > 50 * 1024 * 1024) {
       toast.error('File is too large. Maximum size is 50MB.')
       return
     }
 
     setFile(selectedFile)
-
-    // Create preview
     const reader = new FileReader()
-    reader.onloadend = () => {
-      setPreview(reader.result as string)
-    }
+    reader.onloadend = () => setPreview(reader.result as string)
     reader.readAsDataURL(selectedFile)
+  }, [])
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0]
+    if (selectedFile) processFile(selectedFile)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setDragging(false)
+    const droppedFile = e.dataTransfer.files?.[0]
+    if (droppedFile) processFile(droppedFile)
   }
 
   const handleUpload = async () => {
     if (!file) return
-
     setUploading(true)
 
     try {
@@ -64,8 +70,8 @@ export function ProofUploader({ attemptId, onUploadSuccess }: ProofUploaderProps
         throw new Error(data.error || 'Upload failed')
       }
 
-      toast.success('Proof uploaded successfully! Your attempt is now pending verification.')
-      onUploadSuccess()
+      toast.success('Proof uploaded! Your attempt is now pending verification.')
+      router.refresh()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Upload failed')
       setUploading(false)
@@ -75,9 +81,7 @@ export function ProofUploader({ attemptId, onUploadSuccess }: ProofUploaderProps
   const handleRemove = () => {
     setFile(null)
     setPreview(null)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const isVideo = file?.type.startsWith('video/')
@@ -86,14 +90,19 @@ export function ProofUploader({ attemptId, onUploadSuccess }: ProofUploaderProps
     <div className="space-y-4">
       {!file ? (
         <Card
-          className="border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors cursor-pointer"
+          className={`border-2 border-dashed transition-colors cursor-pointer ${
+            dragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+          }`}
           onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={handleDrop}
         >
           <div className="flex flex-col items-center justify-center p-12">
-            <Upload className="h-12 w-12 text-gray-400 mb-4" />
+            <Upload className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-lg font-medium mb-2">Upload Proof</p>
             <p className="text-sm text-muted-foreground mb-4">
-              Click to upload or drag and drop
+              Click or drag and drop your file here
             </p>
             <p className="text-xs text-muted-foreground">
               Images (JPG, PNG, GIF, WebP) or Videos (MP4, MOV, WebM) up to 50MB
@@ -105,19 +114,19 @@ export function ProofUploader({ attemptId, onUploadSuccess }: ProofUploaderProps
           <div className="flex items-start gap-4">
             <div className="flex-1">
               {isVideo ? (
-                <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
                   <video src={preview || undefined} controls className="w-full h-full object-contain" />
                 </div>
               ) : (
-                <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
-                  <img src={preview || undefined} alt="Preview" className="w-full h-full object-contain" />
+                <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+                  <img src={preview || undefined} alt="Proof preview" className="w-full h-full object-contain" />
                 </div>
               )}
               <div className="mt-2 flex items-center gap-2 text-sm">
                 {isVideo ? (
-                  <Video className="h-4 w-4 text-blue-600" />
+                  <Video className="h-4 w-4 text-primary" />
                 ) : (
-                  <ImageIcon className="h-4 w-4 text-blue-600" />
+                  <ImageIcon className="h-4 w-4 text-primary" />
                 )}
                 <span className="font-medium">{file.name}</span>
                 <span className="text-muted-foreground">
@@ -130,6 +139,7 @@ export function ProofUploader({ attemptId, onUploadSuccess }: ProofUploaderProps
               size="icon"
               onClick={handleRemove}
               disabled={uploading}
+              aria-label="Remove file"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -146,13 +156,15 @@ export function ProofUploader({ attemptId, onUploadSuccess }: ProofUploaderProps
       />
 
       {file && (
-        <Button
-          onClick={handleUpload}
-          disabled={uploading}
-          className="w-full"
-          size="lg"
-        >
-          {uploading ? 'Uploading...' : 'Submit for Verification'}
+        <Button onClick={handleUpload} disabled={uploading} className="w-full" size="lg">
+          {uploading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Uploading...
+            </>
+          ) : (
+            'Submit for Verification'
+          )}
         </Button>
       )}
     </div>
