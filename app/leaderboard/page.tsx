@@ -97,7 +97,7 @@ export default async function LeaderboardPage() {
     username: string
     name: string | null
     avatarUrl: string | null
-    totalPoints: number
+    totalPoints?: number
     weeklyPoints?: number
   }
 

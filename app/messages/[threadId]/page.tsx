@@ -11,10 +11,18 @@ import { Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
 
+interface ThreadUser {
+  id: string
+  username: string
+  name: string | null
+  avatarUrl: string | null
+}
+
 interface ThreadMessage {
   id: string
   body: string
   createdAt: string
+  senderId: string
   sender: {
     id: string
     username: string
@@ -25,11 +33,10 @@ interface ThreadMessage {
 
 interface ThreadDetails {
   id: string
-  otherUser: {
-    username: string
-    name: string | null
-    avatarUrl: string | null
-  }
+  userAId: string
+  userBId: string
+  userA: ThreadUser
+  userB: ThreadUser
 }
 
 export default function ThreadPage() {
@@ -119,7 +126,7 @@ export default function ThreadPage() {
         {/* Header */}
         <div className="border-b p-4 flex items-center gap-3">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={otherUser.avatarUrl} />
+            <AvatarImage src={otherUser.avatarUrl || undefined} />
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
           <div>

@@ -16,8 +16,10 @@ interface AttemptDetails {
   id: string
   status: string
   proofUrl: string | null
+  proofType: string | null
   challenge: {
     title: string
+    description: string
     points: number
   }
   user: {
