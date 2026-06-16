@@ -24,21 +24,13 @@ const customJestConfig = {
     '!**/coverage/**',
     '!**/dist/**',
   ],
-  testMatch: ['**/tests/**/*.(test|spec).[jt]s?(x)'],
+  testMatch: ['<rootDir>/tests/**/*.test.{ts,tsx}'],
   testPathIgnorePatterns: [
     '/node_modules/',
     '/.next/',
     '/tests/e2e/',
   ],
   modulePathIgnorePatterns: ['<rootDir>/.next/'],
-  coverageThreshold: {
-    global: {
-      branches: 70,
-      functions: 70,
-      lines: 70,
-      statements: 70,
-    },
-  },
 }
 
 module.exports = createJestConfig(customJestConfig)

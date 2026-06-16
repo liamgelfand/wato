@@ -1,4 +1,7 @@
 /**
+ * @jest-environment node
+ */
+/**
  * Integration tests for challenges API
  * These tests require a test database to be running
  * Run: npm run docker:test

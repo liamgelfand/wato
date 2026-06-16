@@ -1,4 +1,7 @@
 /**
+ * @jest-environment node
+ */
+/**
  * Database integration tests
  * Tests Prisma queries and database operations
  * 

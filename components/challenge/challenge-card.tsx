@@ -33,7 +33,7 @@ export function ChallengeCard({ challenge }: ChallengeCardProps) {
   const categoryColor = CATEGORY_COLORS[categoryKey] || 'bg-muted text-muted-foreground'
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card data-testid="challenge-card" className="hover:shadow-md transition-shadow">
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1">

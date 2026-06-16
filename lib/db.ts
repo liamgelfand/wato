@@ -13,7 +13,7 @@ import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
 import { logger } from './logger'
 
-const isDevelopment = process.env.NODE_ENV !== 'production'
+const isDevelopment = process.env.NODE_ENV === 'development'
 const isProduction = process.env.NODE_ENV === 'production'
 
 const globalForPrisma = globalThis as unknown as {

@@ -110,6 +110,7 @@ export default async function LeaderboardPage() {
           return (
             <div
               key={user.id}
+              data-testid={isCurrentUser ? 'current-user-entry' : 'leaderboard-entry'}
               className={cn(
                 'flex items-center justify-between p-4 rounded-lg border',
                 isCurrentUser && 'bg-primary/5 border-primary/20'
