@@ -16,7 +16,8 @@ test.describe('Authentication', () => {
     await page.click('button[type="submit"]')
 
     await expect(page).toHaveURL('/')
-    await expect(page.getByRole('heading', { name: /challenge feed/i })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /^wato$/i })).toBeVisible()
+    await expect(page.getByRole('link', { name: /challenges to do/i })).toBeVisible()
   })
 
   test('should show error for invalid credentials', async ({ page }) => {

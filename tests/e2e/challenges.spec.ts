@@ -21,7 +21,7 @@ test.describe('Challenge Feed', () => {
     await page.getByLabel('Filter by category').click()
     await page.getByRole('option', { name: 'Fitness' }).click()
 
-    await page.waitForURL(/\?category=FITNESS/)
+    await page.waitForURL(/\?.*category=FITNESS/)
     const categoryBadges = page.getByText('Fitness', { exact: true })
     await expect(categoryBadges.first()).toBeVisible()
   })

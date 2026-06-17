@@ -33,5 +33,12 @@ export default defineConfig({
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
+    env: {
+      ...process.env,
+      AUTH_TRUST_HOST: 'true',
+      NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+      NEXTAUTH_SECRET:
+        process.env.NEXTAUTH_SECRET || 'test-secret-32-characters-long!!!',
+    },
   },
 })
