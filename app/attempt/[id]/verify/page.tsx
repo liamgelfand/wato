@@ -17,6 +17,7 @@ import { hasPermission, Permissions } from '@/lib/permissions'
 interface AttemptDetails {
   id: string
   status: string
+  userId: string
   proofUrl: string | null
   proofType: string | null
   challenge: {
@@ -25,6 +26,7 @@ interface AttemptDetails {
     points: number
   }
   user: {
+    id: string
     username: string
     name: string | null
   }
@@ -64,6 +66,11 @@ export default function VerifyAttemptPage() {
         throw new Error('Failed to fetch attempt')
       }
       const data = await response.json()
+      if (data.userId === session?.user?.id) {
+        setError('You cannot review your own submission')
+        setFetching(false)
+        return
+      }
       setAttempt(data)
     } catch (error) {
       setError('Failed to load attempt')

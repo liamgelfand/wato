@@ -1,70 +1,81 @@
-# Wato API Reference
+# Wato Mobile API
 
-Base URL: `/api`
+Base URL: `NEXTAUTH_URL` (e.g. `https://your-domain.com`)
 
-## Authentication
+Auth: session cookie (web) or `Authorization: Bearer <accessToken>` (mobile).
 
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| POST | `/api/auth/register` | No | Create account |
-| * | `/api/auth/[...nextauth]` | — | NextAuth session handlers |
+## Auth (mobile)
 
-## Challenges
+| Method | Path | Body | Response |
+|--------|------|------|----------|
+| POST | `/api/auth/mobile/login` | `{ email, password }` | `{ accessToken, refreshToken, user }` |
+| POST | `/api/auth/mobile/refresh` | `{ refreshToken }` | `{ accessToken, refreshToken, user }` |
+| POST | `/api/auth/register` | register fields | user |
 
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| POST | `/api/challenges/create` | Yes | Create a challenge |
+## Feed & challenges
 
-**Body:** `{ title, description, category, difficulty }`  
-**Points:** `10 × difficulty`
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/api/feed?tab=challenges\|friends&category=ALL` | Home feed data |
+| GET | `/api/challenges/trending?limit=20` | Explore / trending |
+| POST | `/api/challenges/create` | Create challenge (may need mod approval) |
 
 ## Attempts
 
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| GET | `/api/attempts/[id]` | Yes | Fetch attempt |
-| POST | `/api/attempts/upload-proof` | Yes | Upload proof (multipart) |
-| POST | `/api/attempts/[id]/verify` | Yes | Submit verification vote |
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/api/attempts/:id` | Attempt detail |
+| POST | `/api/attempts/upload-proof` | `multipart`: file, attemptId, taggedUsernames |
+| POST | `/api/attempts/:id/comments` | `{ body }` |
+| POST | `/api/attempts/:id/reaction` | `{ type: FIRE\|CLAP\|... }` |
+| POST | `/api/attempts/:id/upvote` | Toggle upvote |
 
-**Verification rules:** ≥2 VERIFY votes and 0 REJECT = approved; ≥1 REJECT = rejected.
+## Social
 
-## Friends
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/api/friends/suggestions` | Friend discovery |
+| POST | `/api/friends/send-request` | `{ username }` |
+| POST | `/api/follow` | `{ userId, action?: 'unfollow' }` |
+| GET | `/api/users/:username` | Public profile |
 
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| POST | `/api/friends/send-request` | Yes | Send friend request by username |
+## Leaderboard & teams
 
-## Messages
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/api/leaderboard?scope=friends\|public&period=alltime\|weekly` | Rankings |
+| GET | `/api/teams` | User's teams |
+| POST | `/api/teams` | `{ name, description? }` |
+| GET | `/api/teams/:slug?period=weekly` | Team + leaderboard |
+| POST | `/api/teams/:slug` | Join team |
 
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| POST | `/api/messages/create-thread` | Yes | Create or get thread with a friend |
-| GET | `/api/messages/[threadId]` | Yes | Fetch thread messages |
-| POST | `/api/messages/[threadId]/send` | Yes | Send a message |
+## Push & account
 
-## Notifications
+| Method | Path | Notes |
+|--------|------|-------|
+| POST | `/api/devices` | `{ token, platform: ios\|android\|web }` — Expo push token |
+| DELETE | `/api/devices` | `{ token }` |
+| DELETE | `/api/account` | `{ confirm: username }` |
 
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| GET | `/api/notifications/unread-count` | Optional | Unread notification count |
+## Badges
 
-## Reports
+| Method | Path | Notes |
+|--------|------|-------|
+| GET | `/api/badges` | Current user's earned badges |
 
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| POST | `/api/reports/submit` | Yes | Report challenge or attempt |
+## Deep links
 
-## Health
+- Web: `/challenge/:id`, `/attempt/:id`, `/users/:username`, `/teams/:slug`
+- iOS: `/.well-known/apple-app-site-association`
+- Android: `/.well-known/assetlinks.json`
 
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| GET | `/api/health` | No | Database and app health check |
+## Optional env (AI review)
 
-## Rate Limits
+- `OLLAMA_URL` — e.g. `http://localhost:11434`
+- `OLLAMA_MODEL` — default `llama3.2`
+- `OLLAMA_AUTO_APPROVE=true` — auto-approve AI-safe challenges
 
-- Challenge creation: 10/day
-- Friend requests: 5/hour
-- Messages: 20/minute
-- General API: 100/minute
+## Push
 
-Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` for distributed rate limiting in production.
+- `EXPO_PUSH_URL` — default Expo push endpoint
+- Register device tokens from Expo: `Notifications.getExpoPushTokenAsync()`

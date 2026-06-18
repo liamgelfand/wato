@@ -7,12 +7,12 @@ import { getFriendIds } from '@/lib/friends'
 import { ChallengeCard } from '@/components/challenge/challenge-card'
 import { CategoryFilter } from '@/components/challenge/category-filter'
 import { FriendsActivityFeed } from '@/components/feed/friends-activity-feed'
-import { ModReviewQueue } from '@/components/feed/mod-review-queue'
+import { FeedTabs } from '@/components/feed/feed-tabs'
+import { ModQueuesPanel } from '@/components/feed/mod-queues-panel'
 import { hasPermission, Permissions } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PlusCircle } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 interface PageProps {
   searchParams: Promise<{ category?: string; tab?: string }>
@@ -22,23 +22,20 @@ function FilterSkeleton() {
   return <Skeleton className="h-10 w-[200px]" />
 }
 
-export default async function HomePage({ searchParams }: PageProps) {
-  const session = await auth()
+function ModQueuesSkeleton() {
+  return <Skeleton className="h-24 w-full mb-6" />
+}
 
-  if (!session?.user) {
-    redirect('/login')
-  }
-
-  const params = await searchParams
-  const category = params.category || 'ALL'
-  const tab = params.tab === 'friends' ? 'friends' : 'challenges'
-  const userId = session.user.id
-
-  const friendIds = await getFriendIds(userId)
-
-  const isReviewer = hasPermission(session.user.role, Permissions.ATTEMPTS_VERIFY)
-
-  const [challenges, completedChallengeIds, pendingReviews, friendsActivity] = await Promise.all([
+async function ChallengesPanel({
+  userId,
+  category,
+  isReviewer,
+}: {
+  userId: string
+  category: string
+  isReviewer: boolean
+}) {
+  const [challenges, completedChallengeIds] = await Promise.all([
     prisma.challenge.findMany({
       where: {
         status: 'ACTIVE',
@@ -58,19 +55,53 @@ export default async function HomePage({ searchParams }: PageProps) {
       where: { userId, status: 'APPROVED' },
       select: { challengeId: true },
     }),
-    isReviewer
-      ? prisma.attempt.findMany({
-          where: { status: 'PENDING' },
-          include: {
-            user: { select: { username: true, name: true, avatarUrl: true } },
-            challenge: { select: { title: true, points: true } },
-          },
-          orderBy: { updatedAt: 'desc' },
-          take: 10,
-        })
-      : Promise.resolve([]),
+  ])
+
+  const completedIds = new Set(completedChallengeIds.map((a) => a.challengeId))
+  const challengesToDo = challenges.filter((c) => !completedIds.has(c.id))
+
+  return (
+    <>
+      {isReviewer && (
+        <Suspense fallback={<ModQueuesSkeleton />}>
+          <ModQueuesPanel userId={userId} />
+        </Suspense>
+      )}
+
+      <div className="mb-6">
+        <Suspense fallback={<FilterSkeleton />}>
+          <CategoryFilter currentCategory={category} />
+        </Suspense>
+      </div>
+
+      {challengesToDo.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground mb-4">
+            {challenges.length === 0
+              ? 'No challenges found in this category.'
+              : "You've completed all challenges in this category. Nice work!"}
+          </p>
+          <Button asChild>
+            <Link href="/create">Create a new challenge</Link>
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {challengesToDo.map((challenge) => (
+            <ChallengeCard key={challenge.id} challenge={challenge} />
+          ))}
+        </div>
+      )}
+    </>
+  )
+}
+
+async function FriendsPanel({ userId }: { userId: string }) {
+  const friendIds = await getFriendIds(userId)
+
+  const friendsActivity =
     friendIds.length > 0
-      ? prisma.attempt.findMany({
+      ? await prisma.attempt.findMany({
           where: {
             userId: { in: friendIds },
             status: 'APPROVED',
@@ -82,18 +113,23 @@ export default async function HomePage({ searchParams }: PageProps) {
           orderBy: { updatedAt: 'desc' },
           take: 20,
         })
-      : Promise.resolve([]),
-  ])
+      : []
 
-  const completedIds = new Set(completedChallengeIds.map((a) => a.challengeId))
-  const challengesToDo = challenges.filter((c) => !completedIds.has(c.id))
+  return <FriendsActivityFeed attempts={friendsActivity} />
+}
 
-  const tabHref = (nextTab: string) => {
-    const query = new URLSearchParams()
-    query.set('tab', nextTab)
-    if (category !== 'ALL') query.set('category', category)
-    return `/?${query.toString()}`
+export default async function HomePage({ searchParams }: PageProps) {
+  const session = await auth()
+
+  if (!session?.user) {
+    redirect('/login')
   }
+
+  const params = await searchParams
+  const category = params.category || 'ALL'
+  const tab = params.tab === 'friends' ? 'friends' : 'challenges'
+  const userId = session.user.id
+  const isReviewer = hasPermission(session.user.role, Permissions.ATTEMPTS_VERIFY)
 
   return (
     <div className="container mx-auto max-w-4xl p-4">
@@ -101,9 +137,7 @@ export default async function HomePage({ searchParams }: PageProps) {
         <div>
           <h1 className="text-3xl font-bold">Wato</h1>
           <p className="text-muted-foreground">
-            {tab === 'friends'
-              ? 'See what your friends have completed'
-              : 'Pick a challenge and prove you did it'}
+            Pick a challenge or see what friends have completed
           </p>
         </div>
         <Button asChild>
@@ -114,63 +148,24 @@ export default async function HomePage({ searchParams }: PageProps) {
         </Button>
       </div>
 
-      <div className="flex gap-2 mb-6 p-1 bg-muted rounded-lg w-fit">
-        <Link
-          href={tabHref('challenges')}
-          className={cn(
-            'px-4 py-2 rounded-md text-sm font-medium transition-colors',
-            tab === 'challenges'
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          )}
-        >
-          Challenges to Do
-        </Link>
-        <Link
-          href={tabHref('friends')}
-          className={cn(
-            'px-4 py-2 rounded-md text-sm font-medium transition-colors',
-            tab === 'friends'
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          )}
-        >
-          Friends Activity
-        </Link>
-      </div>
-
-      {tab === 'challenges' ? (
-        <>
-          <ModReviewQueue attempts={pendingReviews} />
-
-          <div className="mb-6">
-            <Suspense fallback={<FilterSkeleton />}>
-              <CategoryFilter currentCategory={category} />
-            </Suspense>
-          </div>
-
-          {challengesToDo.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground mb-4">
-                {challenges.length === 0
-                  ? 'No challenges found in this category.'
-                  : "You've completed all challenges in this category. Nice work!"}
-              </p>
-              <Button asChild>
-                <Link href="/create">Create a new challenge</Link>
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {challengesToDo.map((challenge) => (
-                <ChallengeCard key={challenge.id} challenge={challenge} />
-              ))}
-            </div>
-          )}
-        </>
-      ) : (
-        <FriendsActivityFeed attempts={friendsActivity} />
-      )}
+      <FeedTabs
+        initialTab={tab}
+        category={category}
+        challengesPanel={
+          <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+            <ChallengesPanel
+              userId={userId}
+              category={category}
+              isReviewer={isReviewer}
+            />
+          </Suspense>
+        }
+        friendsPanel={
+          <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+            <FriendsPanel userId={userId} />
+          </Suspense>
+        }
+      />
     </div>
   )
 }

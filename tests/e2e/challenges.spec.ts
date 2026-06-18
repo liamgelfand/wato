@@ -56,6 +56,7 @@ test.describe('Create Challenge', () => {
 
     await expect(page).toHaveURL(/\/challenge\/[a-zA-Z0-9]+/)
     await expect(page.getByText('E2E Test Challenge')).toBeVisible()
+    await expect(page.getByText(/pending approval/i)).toBeVisible()
   })
 
   test('should show validation errors', async ({ page }) => {

@@ -6,6 +6,7 @@ export const Permissions = {
   REPORTS_VIEW: 'reports.view',
   REPORTS_RESOLVE: 'reports.resolve',
   CHALLENGES_HIDE: 'challenges.hide',
+  CHALLENGES_APPROVE: 'challenges.approve',
   CHALLENGES_VIEW_ADMIN: 'challenges.view_admin',
 } as const
 
@@ -14,6 +15,7 @@ export type Permission = (typeof Permissions)[keyof typeof Permissions]
 const MODERATOR_PERMISSIONS: readonly Permission[] = [
   Permissions.ATTEMPTS_VERIFY,
   Permissions.ATTEMPTS_VIEW_ANY,
+  Permissions.CHALLENGES_APPROVE,
 ]
 
 const ADMIN_PERMISSIONS: readonly Permission[] = [

@@ -1,15 +1,12 @@
 import { Skeleton } from '@/components/ui/skeleton'
 
-export default function Loading() {
+export default function HomeLoading() {
   return (
-    <div className="container mx-auto max-w-4xl p-4 space-y-4">
-      <Skeleton className="h-10 w-64" />
-      <Skeleton className="h-4 w-96" />
-      <div className="space-y-4 mt-8">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-32 w-full rounded-lg" />
-        ))}
-      </div>
+    <div className="container mx-auto max-w-4xl p-4">
+      <Skeleton className="h-10 w-48 mb-2" />
+      <Skeleton className="h-5 w-72 mb-6" />
+      <Skeleton className="h-10 w-64 mb-6" />
+      <Skeleton className="h-96 w-full" />
     </div>
   )
 }

@@ -1,21 +1,19 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { getApiUser } from '@/lib/api-auth'
 import { prisma } from '@/lib/db'
 import { storage } from '@/lib/storage'
 import { resolveProofMimeType } from '@/lib/proof-files'
 import { getModeratorUserIds } from '@/lib/moderators'
 import { createNotification } from '@/lib/notifications'
+import { getFriendIds } from '@/lib/friends'
 import path from 'path'
 
 export async function POST(request: Request) {
   try {
-    const session = await auth()
+    const user = await getApiUser(request)
 
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const formData = await request.formData()
@@ -35,7 +33,7 @@ export async function POST(request: Request) {
       include: { challenge: { select: { title: true } } },
     })
 
-    if (!attempt || attempt.userId !== session.user.id) {
+    if (!attempt || attempt.userId !== user.id) {
       return NextResponse.json(
         { error: 'Attempt not found or unauthorized' },
         { status: 404 }
@@ -73,6 +71,11 @@ export async function POST(request: Request) {
     const storageProvider = storage()
     const proofUrl = await storageProvider.uploadFile(buffer, filePath, mimeType)
 
+    const taggedUsernames = (formData.get('taggedUsernames') as string | null)
+      ?.split(',')
+      .map((s) => s.trim().replace(/^@/, ''))
+      .filter(Boolean) ?? []
+
     // Update attempt
     await prisma.attempt.update({
       where: { id: attemptId },
@@ -88,6 +91,35 @@ export async function POST(request: Request) {
       },
     })
 
+    if (taggedUsernames.length > 0) {
+      const friends = await prisma.user.findMany({
+        where: {
+          username: { in: taggedUsernames },
+          OR: [
+            { id: { in: await getFriendIds(user.id) } },
+            { isPrivate: false },
+          ],
+        },
+        select: { id: true },
+      })
+      await prisma.attemptTag.createMany({
+        data: friends.map((f) => ({ attemptId, taggedUserId: f.id })),
+        skipDuplicates: true,
+      })
+      await Promise.all(
+        friends.map((f) =>
+          createNotification({
+            userId: f.id,
+            type: 'FRIEND_ACTIVITY',
+            referenceType: 'ATTEMPT',
+            referenceId: attemptId,
+            title: 'You were tagged in a proof',
+            body: `${user.username} tagged you in "${attempt.challenge.title}"`,
+          })
+        )
+      )
+    }
+
     const moderatorIds = await getModeratorUserIds()
     await Promise.all(
       moderatorIds.map((moderatorId) =>
@@ -97,7 +129,7 @@ export async function POST(request: Request) {
           referenceType: 'ATTEMPT',
           referenceId: attemptId,
           title: 'Attempt needs review',
-          body: `${session.user.username} submitted proof for "${attempt.challenge.title}"`,
+          body: `${user.username} submitted proof for "${attempt.challenge.title}"`,
         })
       )
     )

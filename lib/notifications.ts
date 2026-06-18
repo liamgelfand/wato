@@ -1,5 +1,6 @@
 import { prisma } from './db'
 import { NotificationType } from '@prisma/client'
+import { sendPushToUser } from './push'
 
 interface CreateNotificationInput {
   userId: string
@@ -8,6 +9,7 @@ interface CreateNotificationInput {
   referenceId?: string
   title: string
   body: string
+  skipPush?: boolean
 }
 
 export async function createNotification(input: CreateNotificationInput): Promise<void> {
@@ -22,6 +24,18 @@ export async function createNotification(input: CreateNotificationInput): Promis
       read: false,
     },
   })
+
+  if (!input.skipPush) {
+    await sendPushToUser(input.userId, {
+      title: input.title,
+      body: input.body,
+      data: {
+        type: input.type,
+        referenceType: input.referenceType ?? '',
+        referenceId: input.referenceId ?? '',
+      },
+    })
+  }
 }
 
 export async function markNotificationRead(notificationId: string): Promise<void> {

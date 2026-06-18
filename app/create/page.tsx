@@ -29,6 +29,7 @@ export default function CreateChallengePage() {
     description: '',
     category: 'FITNESS',
     difficulty: 3,
+    prerequisiteChallengeId: '' as string,
   })
 
   if (status === 'unauthenticated') {
@@ -45,7 +46,10 @@ export default function CreateChallengePage() {
       const response = await fetch('/api/challenges/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          prerequisiteChallengeId: formData.prerequisiteChallengeId || undefined,
+        }),
       })
 
       const data = await response.json()
@@ -60,7 +64,7 @@ export default function CreateChallengePage() {
         return
       }
 
-      toast.success('Challenge created successfully!')
+      toast.success('Challenge created! AI review is running in the background.')
       router.push(`/challenge/${data.id}`)
     } catch (error) {
       setErrors(['An error occurred. Please try again.'])
@@ -83,7 +87,7 @@ export default function CreateChallengePage() {
         <CardHeader>
           <CardTitle>Create a Challenge</CardTitle>
           <CardDescription>
-            Design a fun and safe challenge for the community
+            Your challenge is saved instantly. AI review runs in the background and it goes live when approved.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -175,9 +179,25 @@ export default function CreateChallengePage() {
               </div>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="prerequisite">Prerequisite challenge ID (optional)</Label>
+              <Input
+                id="prerequisite"
+                placeholder="Paste challenge ID to require completion first"
+                value={formData.prerequisiteChallengeId}
+                onChange={(e) =>
+                  setFormData({ ...formData, prerequisiteChallengeId: e.target.value })
+                }
+                disabled={loading}
+              />
+              <p className="text-xs text-muted-foreground">
+                Chain challenges: users must complete the prerequisite before attempting this one
+              </p>
+            </div>
+
             <div className="flex gap-2">
               <Button type="submit" disabled={loading} className="flex-1">
-                {loading ? 'Creating...' : 'Create Challenge'}
+                {loading ? 'Creating…' : 'Create Challenge'}
               </Button>
               <Button
                 type="button"

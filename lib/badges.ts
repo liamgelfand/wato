@@ -16,10 +16,12 @@ export const BADGE_DEFINITIONS: Badge[] = [
   { id: 'first_created', name: 'Creator', description: 'Create your first challenge', icon: '✨' },
   { id: 'ten_friends', name: 'Social Butterfly', description: 'Have 10 friends', icon: '🦋' },
   { id: 'ten_verifications', name: 'Trusted Judge', description: 'Review 10 challenge submissions', icon: '⚖️' },
+  { id: 'streak_7', name: 'Week Warrior', description: 'Maintain a 7-day streak', icon: '🔥' },
+  { id: 'streak_30', name: 'Monthly Machine', description: 'Maintain a 30-day streak', icon: '⚡' },
 ]
 
 export async function getUserBadges(userId: string): Promise<Badge[]> {
-  const [completedCount, createdCount, friendCount, verificationCount, user] = await Promise.all([
+  const [completedCount, createdCount, friendCount, verificationCount, user, streak] = await Promise.all([
     prisma.attempt.count({ where: { userId, status: 'APPROVED' } }),
     prisma.challenge.count({ where: { creatorId: userId } }),
     prisma.friendship.count({
@@ -32,6 +34,7 @@ export async function getUserBadges(userId: string): Promise<Badge[]> {
     }),
     prisma.verificationVote.count({ where: { voterId: userId } }),
     prisma.user.findUnique({ where: { id: userId }, select: { totalPoints: true } }),
+    prisma.userStreak.findUnique({ where: { userId } }),
   ])
 
   const totalPoints = user?.totalPoints ?? 0
@@ -44,6 +47,8 @@ export async function getUserBadges(userId: string): Promise<Badge[]> {
   if (createdCount >= 1) earned.push(BADGE_DEFINITIONS[4])
   if (friendCount >= 10) earned.push(BADGE_DEFINITIONS[5])
   if (verificationCount >= 10) earned.push(BADGE_DEFINITIONS[6])
+  if ((streak?.currentStreak ?? 0) >= 7) earned.push(BADGE_DEFINITIONS[7])
+  if ((streak?.longestStreak ?? 0) >= 30) earned.push(BADGE_DEFINITIONS[8])
 
   return earned
 }

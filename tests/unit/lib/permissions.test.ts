@@ -17,6 +17,7 @@ describe('permissions', () => {
   it('grants moderation permissions to MODERATOR', () => {
     expect(hasPermission('MODERATOR', Permissions.ATTEMPTS_VERIFY)).toBe(true)
     expect(hasPermission('MODERATOR', Permissions.ATTEMPTS_VIEW_ANY)).toBe(true)
+    expect(hasPermission('MODERATOR', Permissions.CHALLENGES_APPROVE)).toBe(true)
     expect(hasPermission('MODERATOR', Permissions.REPORTS_VIEW)).toBe(false)
     expect(hasPermission('MODERATOR', Permissions.CHALLENGES_HIDE)).toBe(false)
   })

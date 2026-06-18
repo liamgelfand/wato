@@ -51,3 +51,24 @@ export async function rejectAttemptAction(attemptId: string): Promise<void> {
   revalidatePath('/admin')
   revalidatePath(`/attempt/${attemptId}`)
 }
+
+export async function approveChallengeAction(challengeId: string): Promise<void> {
+  await requireActionPermission(Permissions.CHALLENGES_APPROVE)
+  await prisma.challenge.update({
+    where: { id: challengeId },
+    data: { status: 'ACTIVE' },
+  })
+  revalidatePath('/admin')
+  revalidatePath('/')
+  revalidatePath(`/challenge/${challengeId}`)
+}
+
+export async function rejectChallengeAction(challengeId: string): Promise<void> {
+  await requireActionPermission(Permissions.CHALLENGES_APPROVE)
+  await prisma.challenge.update({
+    where: { id: challengeId },
+    data: { status: 'REJECTED' },
+  })
+  revalidatePath('/admin')
+  revalidatePath(`/challenge/${challengeId}`)
+}

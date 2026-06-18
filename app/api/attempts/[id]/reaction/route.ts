@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { getApiUser } from '@/lib/api-auth'
 import { prisma } from '@/lib/db'
 import { attemptReactionSchema } from '@/lib/validations'
 import { getEngageableAttempt } from '@/lib/attempt-engagement-access'
+import { createNotification } from '@/lib/notifications'
 import type { AttemptReactionType } from '@prisma/client'
 
 export async function POST(
@@ -11,17 +12,13 @@ export async function POST(
 ) {
   try {
     const { id: attemptId } = await params
-    const session = await auth()
+    const user = await getApiUser(request)
 
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const attempt = await getEngageableAttempt(
-      attemptId,
-      session.user.id,
-      session.user.role
-    )
+    const attempt = await getEngageableAttempt(attemptId, user.id, user.role)
     if (!attempt) {
       return NextResponse.json({ error: 'Cannot react to this attempt' }, { status: 403 })
     }
@@ -36,13 +33,11 @@ export async function POST(
     }
 
     const { type } = validation.data
-
     const existing = await prisma.attemptReaction.findUnique({
-      where: {
-        attemptId_userId: { attemptId, userId: session.user.id },
-      },
+      where: { attemptId_userId: { attemptId, userId: user.id } },
     })
 
+    let added = false
     if (existing?.type === type) {
       await prisma.attemptReaction.delete({ where: { id: existing.id } })
     } else if (existing) {
@@ -50,13 +45,22 @@ export async function POST(
         where: { id: existing.id },
         data: { type: type as AttemptReactionType },
       })
+      added = true
     } else {
       await prisma.attemptReaction.create({
-        data: {
-          attemptId,
-          userId: session.user.id,
-          type: type as AttemptReactionType,
-        },
+        data: { attemptId, userId: user.id, type: type as AttemptReactionType },
+      })
+      added = true
+    }
+
+    if (added && attempt.userId !== user.id) {
+      await createNotification({
+        userId: attempt.userId,
+        type: 'ATTEMPT_REACTION',
+        referenceType: 'ATTEMPT',
+        referenceId: attemptId,
+        title: 'Someone reacted to your attempt',
+        body: `${user.name || user.username} reacted with ${type}`,
       })
     }
 
@@ -67,9 +71,7 @@ export async function POST(
     })
 
     const userReaction = await prisma.attemptReaction.findUnique({
-      where: {
-        attemptId_userId: { attemptId, userId: session.user.id },
-      },
+      where: { attemptId_userId: { attemptId, userId: user.id } },
       select: { type: true },
     })
 

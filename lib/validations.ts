@@ -39,6 +39,7 @@ export const createChallengeSchema = z.object({
     .int()
     .min(1, 'Difficulty must be at least 1')
     .max(5, 'Difficulty must be at most 5'),
+  prerequisiteChallengeId: z.string().cuid().optional().nullable(),
 })
 
 export type CreateChallengeInput = z.infer<typeof createChallengeSchema>

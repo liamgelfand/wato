@@ -8,7 +8,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Users } from 'lucide-react'
 import { AddFriendForm } from '@/components/friends/add-friend-form'
+import { FriendSuggestions } from '@/components/friends/friend-suggestions'
 import { MessageFriendButton } from '@/components/friends/message-friend-button'
+import { getFriendSuggestions } from '@/lib/friend-suggestions'
 
 async function acceptFriendRequest(requestId: string) {
   'use server'
@@ -114,6 +116,8 @@ export default async function FriendsPage() {
     },
   })
 
+  const suggestions = await getFriendSuggestions(userId)
+
   return (
     <div className="container mx-auto max-w-4xl p-4">
       <div className="mb-6">
@@ -127,10 +131,11 @@ export default async function FriendsPage() {
       </div>
 
       <Tabs defaultValue="friends">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="friends">
             Friends {friendsList.length > 0 && `(${friendsList.length})`}
           </TabsTrigger>
+          <TabsTrigger value="suggestions">Discover</TabsTrigger>
           <TabsTrigger value="requests">
             Requests {pendingRequests.length > 0 && `(${pendingRequests.length})`}
           </TabsTrigger>
@@ -183,6 +188,17 @@ export default async function FriendsPage() {
                   })}
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="suggestions">
+          <Card>
+            <CardHeader>
+              <CardTitle>Suggested for you</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FriendSuggestions suggestions={suggestions} />
             </CardContent>
           </Card>
         </TabsContent>

@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { getUserBadges } from '@/lib/badges'
+import { getUserStreak } from '@/lib/streaks'
+import { DeleteAccountButton } from '@/components/profile/delete-account-button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -43,6 +45,7 @@ export default async function ProfilePage() {
   }
 
   const badges = await getUserBadges(user.id)
+  const streak = await getUserStreak(user.id)
 
   const initials = user.name
     ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase()
@@ -82,6 +85,12 @@ export default async function ProfilePage() {
               <div className="text-sm text-muted-foreground">Badges</div>
             </div>
           </div>
+          {streak && streak.currentStreak > 0 && (
+            <div className="mt-4 rounded-lg bg-orange-500/10 border border-orange-500/20 p-3 text-center">
+              <p className="text-2xl font-bold text-orange-600">🔥 {streak.currentStreak}</p>
+              <p className="text-sm text-muted-foreground">day streak (best: {streak.longestStreak})</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -97,7 +106,7 @@ export default async function ProfilePage() {
       {badges.length > 0 && (
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Badges</CardTitle>
+            <CardTitle>Badges & achievements</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -114,6 +123,15 @@ export default async function ProfilePage() {
           </CardContent>
         </Card>
       )}
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Danger zone</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DeleteAccountButton username={user.username} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

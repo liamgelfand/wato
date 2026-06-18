@@ -85,6 +85,7 @@ describe('/api/challenges/create', () => {
     expect(response.status).toBe(201)
     expect(data.title).toBe(validChallenge.title)
     expect(data.points).toBe(30)
+    expect(data.status).toBe('PENDING_REVIEW')
   })
 
   it('should reject challenge with banned words', async () => {

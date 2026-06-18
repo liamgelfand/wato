@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { getApiUser } from '@/lib/api-auth'
 import { prisma } from '@/lib/db'
 import { getEngageableAttempt } from '@/lib/attempt-engagement-access'
+import { createNotification } from '@/lib/notifications'
 
 export async function POST(
   _request: Request,
@@ -9,25 +10,19 @@ export async function POST(
 ) {
   try {
     const { id: attemptId } = await params
-    const session = await auth()
+    const user = await getApiUser(_request)
 
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const attempt = await getEngageableAttempt(
-      attemptId,
-      session.user.id,
-      session.user.role
-    )
+    const attempt = await getEngageableAttempt(attemptId, user.id, user.role)
     if (!attempt) {
       return NextResponse.json({ error: 'Cannot upvote this attempt' }, { status: 403 })
     }
 
     const existing = await prisma.attemptUpvote.findUnique({
-      where: {
-        attemptId_userId: { attemptId, userId: session.user.id },
-      },
+      where: { attemptId_userId: { attemptId, userId: user.id } },
     })
 
     if (existing) {
@@ -37,8 +32,20 @@ export async function POST(
     }
 
     await prisma.attemptUpvote.create({
-      data: { attemptId, userId: session.user.id },
+      data: { attemptId, userId: user.id },
     })
+
+    if (attempt.userId !== user.id) {
+      await createNotification({
+        userId: attempt.userId,
+        type: 'ATTEMPT_UPVOTE',
+        referenceType: 'ATTEMPT',
+        referenceId: attemptId,
+        title: 'Someone cheered you on',
+        body: `${user.name || user.username} upvoted your attempt`,
+      })
+    }
+
     const count = await prisma.attemptUpvote.count({ where: { attemptId } })
     return NextResponse.json({ upvoted: true, count })
   } catch (error) {

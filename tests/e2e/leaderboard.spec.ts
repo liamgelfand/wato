@@ -22,8 +22,8 @@ test.describe('Leaderboard', () => {
   test('should switch between total and weekly views', async ({ page }) => {
     await page.goto('/leaderboard')
 
-    const allTimeTab = page.getByRole('tab', { name: 'All Time' })
-    const weeklyTab = page.getByRole('tab', { name: 'This Week' })
+    const allTimeTab = page.getByRole('tab', { name: 'All Time' }).first()
+    const weeklyTab = page.getByRole('tab', { name: 'This Week' }).first()
 
     await expect(allTimeTab).toBeVisible()
     await expect(weeklyTab).toBeVisible()
@@ -33,11 +33,24 @@ test.describe('Leaderboard', () => {
     await expect(page.locator('[data-testid="leaderboard-entry"], [data-testid="current-user-entry"]').first()).toBeVisible()
   })
 
+  test('should switch between friends and public leaderboards', async ({ page }) => {
+    await page.goto('/leaderboard')
+
+    const friendsTab = page.getByRole('tab', { name: 'Friends' })
+    const publicTab = page.getByRole('tab', { name: 'Public' })
+
+    await expect(friendsTab).toBeVisible()
+    await expect(publicTab).toBeVisible()
+
+    await publicTab.click()
+    await expect(page.getByText(/Community — All Time/i)).toBeVisible()
+  })
+
   test('should highlight current user', async ({ page }) => {
     await page.goto('/leaderboard')
 
-    const allTimePanel = page.getByRole('tabpanel').first()
-    const currentUserEntry = allTimePanel.getByTestId('current-user-entry')
+    const friendsPanel = page.getByRole('tabpanel').filter({ hasText: /Friends — All Time/i })
+    const currentUserEntry = friendsPanel.getByTestId('current-user-entry')
     await expect(currentUserEntry).toBeVisible()
     await expect(currentUserEntry.getByText('You')).toBeVisible()
   })

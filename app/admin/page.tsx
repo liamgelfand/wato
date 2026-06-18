@@ -3,21 +3,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Shield, AlertTriangle, Flag } from 'lucide-react'
+import { Shield, AlertTriangle, Flag, ClipboardList } from 'lucide-react'
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { requirePermission } from '@/lib/auth-guards'
 import { hasPermission, Permissions } from '@/lib/permissions'
 import {
   approveAttemptAction,
+  approveChallengeAction,
   hideChallengeAction,
   rejectAttemptAction,
+  rejectChallengeAction,
   resolveReportAction,
 } from '@/app/admin/actions'
 
 export default async function AdminPage() {
   const session = await requirePermission(Permissions.ATTEMPTS_VERIFY)
+  const userId = session.user.id
   const isAdmin = hasPermission(session.user.role, Permissions.REPORTS_VIEW)
+  const canApproveChallenges = hasPermission(session.user.role, Permissions.CHALLENGES_APPROVE)
 
   const reports = isAdmin
     ? await prisma.report.findMany({
@@ -33,7 +37,10 @@ export default async function AdminPage() {
     : []
 
   const pendingAttempts = await prisma.attempt.findMany({
-    where: { status: 'PENDING' },
+    where: {
+      status: 'PENDING',
+      userId: { not: userId },
+    },
     include: {
       user: {
         select: { username: true, name: true },
@@ -45,6 +52,19 @@ export default async function AdminPage() {
     orderBy: { createdAt: 'desc' },
     take: 20,
   })
+
+  const pendingChallenges = canApproveChallenges
+    ? await prisma.challenge.findMany({
+        where: { status: 'PENDING_REVIEW' },
+        include: {
+          creator: {
+            select: { username: true, name: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      })
+    : []
 
   const recentChallenges = isAdmin
     ? await prisma.challenge.findMany({
@@ -59,6 +79,13 @@ export default async function AdminPage() {
       })
     : []
 
+  const tabCount = (isAdmin ? 1 : 0) + 1 + (canApproveChallenges ? 1 : 0) + (isAdmin ? 1 : 0)
+  const defaultTab = isAdmin && reports.length > 0
+    ? 'reports'
+    : pendingChallenges.length > 0
+      ? 'challenge-review'
+      : 'attempts'
+
   return (
     <div className="container mx-auto max-w-6xl p-4">
       <div className="mb-6">
@@ -69,21 +96,26 @@ export default async function AdminPage() {
         <p className="text-muted-foreground">
           {isAdmin
             ? 'Moderate content and manage the community'
-            : 'Review pending challenge submissions'}
+            : 'Review pending submissions and challenges'}
         </p>
       </div>
 
-      <Tabs defaultValue={isAdmin ? 'reports' : 'attempts'}>
-        <TabsList className={isAdmin ? 'grid w-full grid-cols-3' : 'grid w-full grid-cols-1'}>
+      <Tabs defaultValue={defaultTab}>
+        <TabsList className={`grid w-full grid-cols-${tabCount}`} style={{ gridTemplateColumns: `repeat(${tabCount}, minmax(0, 1fr))` }}>
           {isAdmin && (
             <TabsTrigger value="reports">
               Reports {reports.length > 0 && `(${reports.length})`}
             </TabsTrigger>
           )}
+          {canApproveChallenges && (
+            <TabsTrigger value="challenge-review">
+              Challenges {pendingChallenges.length > 0 && `(${pendingChallenges.length})`}
+            </TabsTrigger>
+          )}
           <TabsTrigger value="attempts">
-            Pending Attempts {pendingAttempts.length > 0 && `(${pendingAttempts.length})`}
+            Attempts {pendingAttempts.length > 0 && `(${pendingAttempts.length})`}
           </TabsTrigger>
-          {isAdmin && <TabsTrigger value="challenges">Challenges</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="challenges">Active</TabsTrigger>}
         </TabsList>
 
         {isAdmin && (
@@ -160,6 +192,56 @@ export default async function AdminPage() {
           </TabsContent>
         )}
 
+        {canApproveChallenges && (
+          <TabsContent value="challenge-review">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5" />
+                  Challenges Awaiting Approval
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {pendingChallenges.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    No challenges pending approval
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {pendingChallenges.map((challenge) => (
+                      <div key={challenge.id} className="border-b pb-4 last:border-0">
+                        <p className="font-semibold">{challenge.title}</p>
+                        <p className="text-sm text-muted-foreground mb-1">
+                          By {challenge.creator.name || challenge.creator.username} ·{' '}
+                          {formatDistanceToNow(new Date(challenge.createdAt), { addSuffix: true })}
+                        </p>
+                        <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                          {challenge.description}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          <Button size="sm" variant="outline" asChild>
+                            <Link href={`/challenge/${challenge.id}`}>View</Link>
+                          </Button>
+                          <form action={approveChallengeAction.bind(null, challenge.id)}>
+                            <Button type="submit" size="sm" variant="default">
+                              Approve
+                            </Button>
+                          </form>
+                          <form action={rejectChallengeAction.bind(null, challenge.id)}>
+                            <Button type="submit" size="sm" variant="destructive">
+                              Reject
+                            </Button>
+                          </form>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
         <TabsContent value="attempts">
           <Card>
             <CardHeader>
@@ -185,6 +267,9 @@ export default async function AdminPage() {
                         <Button size="sm" asChild>
                           <Link href={`/attempt/${attempt.id}`}>View Attempt</Link>
                         </Button>
+                        <Button size="sm" asChild>
+                          <Link href={`/attempt/${attempt.id}/verify`}>Review</Link>
+                        </Button>
                         <form action={approveAttemptAction.bind(null, attempt.id)}>
                           <Button type="submit" size="sm" variant="default">
                             Approve
@@ -208,7 +293,7 @@ export default async function AdminPage() {
           <TabsContent value="challenges">
             <Card>
               <CardHeader>
-                <CardTitle>Recent Challenges</CardTitle>
+                <CardTitle>Active Challenges</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">

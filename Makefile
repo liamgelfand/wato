@@ -1,4 +1,4 @@
-.PHONY: help setup install dev docker-up docker-down docker-db db-migrate db-seed db-studio test lint build logs
+.PHONY: help setup install dev docker-up docker-down docker-db db-migrate db-seed db-studio test lint build logs mobile-install mobile-setup mobile mobile-stop mobile-web mobile-android
 
 # Wato — common commands (requires `make`: Git Bash, WSL, or `choco install make` on Windows)
 
@@ -6,7 +6,7 @@ help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
 setup: install ## First-time setup: install deps, start DB, migrate, seed
-	@test -f .env || cp .env.example .env
+	node -e "const fs=require('fs'); if (!fs.existsSync('.env')) fs.copyFileSync('.env.example', '.env');"
 	@echo "Edit .env and set NEXTAUTH_SECRET, then run: make dev"
 	$(MAKE) docker-db
 	$(MAKE) db-migrate
@@ -57,3 +57,23 @@ build: ## Production build
 
 logs: ## Tail app container logs (docker-up only)
 	docker compose logs -f app
+
+mobile-install: ## Install mobile app dependencies
+	cd mobile && npm install
+	cd mobile && npx expo install --fix
+
+mobile-setup: mobile-install ## First-time mobile setup (install + .env)
+	node -e "const fs=require('fs'); const d='mobile/.env'; if (!fs.existsSync(d)) fs.copyFileSync('mobile/.env.example', d);"
+	@echo "Edit mobile/.env — use http://localhost:3000 on laptop, or your LAN IP for a phone"
+
+mobile-stop: ## Stop Metro bundler (frees port 8081)
+	node mobile/scripts/free-port.js 8081
+
+mobile: mobile-stop ## Start Expo dev server (press w=web, a=android, scan QR for phone)
+	cd mobile && npm start
+
+mobile-web: mobile-stop ## Run mobile app in browser (laptop — set EXPO_PUBLIC_API_URL=http://localhost:3000)
+	cd mobile && npm run web
+
+mobile-android: mobile-stop ## Run mobile app in Android emulator
+	cd mobile && npm run android

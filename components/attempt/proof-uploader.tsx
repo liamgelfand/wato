@@ -1,16 +1,19 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Upload, X, Image as ImageIcon, Video, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { resolveProofMimeType } from '@/lib/proof-files'
+import { TagFriendsInput } from '@/components/attempt/tag-friends-input'
 
 interface ProofUploaderProps {
   attemptId: string
 }
+
+const draftKey = (attemptId: string) => `wato-proof-draft-${attemptId}`
 
 export function ProofUploader({ attemptId }: ProofUploaderProps) {
   const router = useRouter()
@@ -18,24 +21,59 @@ export function ProofUploader({ attemptId }: ProofUploaderProps) {
   const [preview, setPreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [dragging, setDragging] = useState(false)
+  const [taggedUsernames, setTaggedUsernames] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const processFile = useCallback((selectedFile: File) => {
-    const mimeType = resolveProofMimeType(selectedFile.name, selectedFile.type)
-    if (!mimeType) {
-      toast.error('Invalid file type. Please upload an image or video.')
-      return
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(draftKey(attemptId))
+      if (saved) {
+        const parsed = JSON.parse(saved) as { taggedUsernames?: string; preview?: string }
+        if (parsed.taggedUsernames) setTaggedUsernames(parsed.taggedUsernames)
+        if (parsed.preview) setPreview(parsed.preview)
+      }
+    } catch {
+      // ignore corrupt draft
     }
-    if (selectedFile.size > 50 * 1024 * 1024) {
-      toast.error('File is too large. Maximum size is 50MB.')
-      return
-    }
+  }, [attemptId])
 
-    setFile(selectedFile)
-    const reader = new FileReader()
-    reader.onloadend = () => setPreview(reader.result as string)
-    reader.readAsDataURL(selectedFile)
-  }, [])
+  const saveDraft = useCallback(
+    (tags: string, previewUrl: string | null) => {
+      try {
+        localStorage.setItem(
+          draftKey(attemptId),
+          JSON.stringify({ taggedUsernames: tags, preview: previewUrl })
+        )
+      } catch {
+        // storage full
+      }
+    },
+    [attemptId]
+  )
+
+  const processFile = useCallback(
+    (selectedFile: File) => {
+      const mimeType = resolveProofMimeType(selectedFile.name, selectedFile.type)
+      if (!mimeType) {
+        toast.error('Invalid file type. Please upload an image or video.')
+        return
+      }
+      if (selectedFile.size > 50 * 1024 * 1024) {
+        toast.error('File is too large. Maximum size is 50MB.')
+        return
+      }
+
+      setFile(selectedFile)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const result = reader.result as string
+        setPreview(result)
+        saveDraft(taggedUsernames, result)
+      }
+      reader.readAsDataURL(selectedFile)
+    },
+    [saveDraft, taggedUsernames]
+  )
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
@@ -57,6 +95,9 @@ export function ProofUploader({ attemptId }: ProofUploaderProps) {
       const formData = new FormData()
       formData.append('file', file)
       formData.append('attemptId', attemptId)
+      if (taggedUsernames.trim()) {
+        formData.append('taggedUsernames', taggedUsernames)
+      }
 
       const response = await fetch('/api/attempts/upload-proof', {
         method: 'POST',
@@ -68,6 +109,7 @@ export function ProofUploader({ attemptId }: ProofUploaderProps) {
         throw new Error(data.error || 'Upload failed')
       }
 
+      localStorage.removeItem(draftKey(attemptId))
       toast.success('Proof uploaded! Waiting for moderator review.')
       router.refresh()
     } catch (error) {
@@ -149,9 +191,19 @@ export function ProofUploader({ attemptId }: ProofUploaderProps) {
         ref={fileInputRef}
         type="file"
         accept="image/*,video/*"
+        capture="environment"
         onChange={handleFileSelect}
         className="hidden"
       />
+
+      {file && (
+        <TagFriendsInput
+          onChange={(tags) => {
+            setTaggedUsernames(tags)
+            saveDraft(tags, preview)
+          }}
+        />
+      )}
 
       {file && (
         <Button onClick={handleUpload} disabled={uploading} className="w-full" size="lg">

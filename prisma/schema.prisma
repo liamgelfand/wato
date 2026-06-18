@@ -15,7 +15,9 @@ enum UserRole {
 }
 
 enum ChallengeStatus {
+  PENDING_REVIEW
   ACTIVE
+  REJECTED
   HIDDEN
 }
 
@@ -67,12 +69,26 @@ enum AttemptReactionType {
 enum NotificationType {
   FRIEND_REQUEST
   FRIEND_ACCEPTED
+  FRIEND_ACTIVITY
+  FOLLOW
   VERIFICATION_REQUEST
+  CHALLENGE_REVIEW_REQUEST
   VERIFICATION_VOTE
   ATTEMPT_APPROVED
   ATTEMPT_REJECTED
+  ATTEMPT_COMMENT
+  ATTEMPT_REACTION
+  ATTEMPT_UPVOTE
+  STREAK_MILESTONE
+  TEAM_INVITE
   MESSAGE
   ACHIEVEMENT
+}
+
+enum TeamRole {
+  OWNER
+  ADMIN
+  MEMBER
 }
 
 model User {
@@ -107,6 +123,16 @@ model User {
   messageThreadsA   MessageThread[] @relation("ThreadUserA")
   messageThreadsB   MessageThread[] @relation("ThreadUserB")
   messagesSent      Message[]
+
+  // Social graph
+  followers         Follow[]       @relation("Following")
+  following         Follow[]       @relation("Follower")
+  streak            UserStreak?
+  deviceTokens      DeviceToken[]
+  refreshTokens     MobileRefreshToken[]
+  teamsCreated      Team[]         @relation("TeamCreator")
+  teamMemberships   TeamMember[]
+  attemptTags       AttemptTag[]   @relation("TaggedUser")
   
   // NextAuth
   accounts          Account[]
@@ -155,25 +181,30 @@ model VerificationToken {
 }
 
 model Challenge {
-  id          String            @id @default(cuid())
-  creatorId   String
-  title       String            @db.VarChar(100)
-  description String            @db.VarChar(500)
-  category    ChallengeCategory
-  difficulty  Int               // 1-5
-  basePoints  Int               @default(10)
-  points      Int               // calculated: basePoints * difficulty
-  status      ChallengeStatus   @default(ACTIVE)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id                      String            @id @default(cuid())
+  creatorId               String
+  title                   String            @db.VarChar(100)
+  description             String            @db.VarChar(500)
+  category                ChallengeCategory
+  difficulty              Int               // 1-5
+  basePoints              Int               @default(10)
+  points                  Int               // calculated: basePoints * difficulty
+  status                  ChallengeStatus   @default(ACTIVE)
+  prerequisiteChallengeId String?
+  aiReviewNote            String?           @db.Text
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
   
-  creator     User              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  attempts    Attempt[]
+  creator                 User              @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  prerequisiteChallenge   Challenge?        @relation("ChallengeChain", fields: [prerequisiteChallengeId], references: [id], onDelete: SetNull)
+  unlocksChallenges       Challenge[]       @relation("ChallengeChain")
+  attempts                Attempt[]
   
   @@index([creatorId])
   @@index([status])
   @@index([category])
   @@index([createdAt])
+  @@index([prerequisiteChallengeId])
 }
 
 model Attempt {
@@ -193,6 +224,7 @@ model Attempt {
   comments          AttemptComment[]
   upvotes           AttemptUpvote[]
   reactions         AttemptReaction[]
+  tags              AttemptTag[]
   pointsLedger    PointsLedger?
   
   @@index([userId])
@@ -360,4 +392,98 @@ model Notification {
   @@index([userId])
   @@index([read])
   @@index([createdAt])
+}
+
+model UserStreak {
+  userId           String    @id
+  currentStreak    Int       @default(0)
+  longestStreak    Int       @default(0)
+  lastActivityDate DateTime?
+  updatedAt        DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model AttemptTag {
+  id           String   @id @default(cuid())
+  attemptId    String
+  taggedUserId String
+  createdAt    DateTime @default(now())
+
+  attempt    Attempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  taggedUser User    @relation("TaggedUser", fields: [taggedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, taggedUserId])
+  @@index([attemptId])
+  @@index([taggedUserId])
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String   @db.VarChar(80)
+  slug        String   @unique @db.VarChar(80)
+  description String?  @db.VarChar(300)
+  creatorId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creator User         @relation("TeamCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  members TeamMember[]
+
+  @@index([creatorId])
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  teamId    String
+  userId    String
+  role      TeamRole @default(MEMBER)
+  joinedAt  DateTime @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+}
+
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  platform  String   // ios | android | web
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model MobileRefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }

@@ -1,6 +1,8 @@
 import { prisma } from './db'
 import { createNotification } from './notifications'
 import { checkAndAwardBadges } from './badges'
+import { recordStreakActivity } from './streaks'
+import { getFriendIds } from './friends'
 
 export async function awardPoints(
   userId: string,
@@ -55,7 +57,28 @@ export async function awardPoints(
     body: `Your attempt was approved! You earned ${points} points!`,
   })
 
+  await recordStreakActivity(userId)
   await checkAndAwardBadges(userId)
+
+  const attempt = await prisma.attempt.findUnique({
+    where: { id: attemptId },
+    include: { challenge: { select: { title: true } }, user: { select: { username: true, name: true } } },
+  })
+  if (attempt) {
+    const friendIds = await getFriendIds(userId)
+    await Promise.all(
+      friendIds.map((friendId) =>
+        createNotification({
+          userId: friendId,
+          type: 'FRIEND_ACTIVITY',
+          referenceType: 'ATTEMPT',
+          referenceId: attemptId,
+          title: 'Friend completed a challenge',
+          body: `${attempt.user.name || attempt.user.username} completed "${attempt.challenge.title}"`,
+        })
+      )
+    )
+  }
 }
 
 export async function getUserTotalPoints(userId: string): Promise<number> {
