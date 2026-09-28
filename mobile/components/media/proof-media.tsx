@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native'
-import { Video, ResizeMode } from 'expo-av'
+import { useVideoPlayer, VideoView } from 'expo-video'
 import { Ionicons } from '@expo/vector-icons'
 import { colors, radius, spacing, typography } from '../../constants/theme'
 
@@ -14,17 +14,23 @@ export function isVideoProof(proofType?: string | null): boolean {
   return !!proofType && proofType.startsWith('video/')
 }
 
+function VideoProof({ uri, style }: { uri: string; style?: object }) {
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = false
+  })
+  return (
+    <VideoView
+      player={player}
+      style={[styles.media, style]}
+      contentFit="cover"
+      nativeControls
+    />
+  )
+}
+
 export function ProofMedia({ uri, proofType, style }: ProofMediaProps) {
   if (isVideoProof(proofType)) {
-    return (
-      <Video
-        source={{ uri }}
-        style={[styles.media, style]}
-        useNativeControls
-        resizeMode={ResizeMode.COVER}
-        isLooping={false}
-      />
-    )
+    return <VideoProof uri={uri} style={style} />
   }
   return <Image source={{ uri }} style={[styles.media, style]} resizeMode="cover" />
 }
@@ -39,7 +45,6 @@ export function ProofUploader({ attemptId, accessToken, onSuccess }: ProofUpload
   const [media, setMedia] = useState<import('../../lib/pick-media').PickedMedia | null>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState(false)
 
   const pick = async (source: 'camera' | 'library') => {
     setError(null)
@@ -61,25 +66,12 @@ export function ProofUploader({ attemptId, accessToken, onSuccess }: ProofUpload
     try {
       const { uploadProof } = await import('../../lib/api')
       await uploadProof(accessToken, attemptId, media)
-      setDone(true)
       onSuccess?.()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload failed')
     } finally {
       setUploading(false)
     }
-  }
-
-  if (done) {
-    return (
-      <View style={styles.success}>
-        <Ionicons name="checkmark-circle" size={28} color={colors.primary} />
-        <Text style={styles.successTitle}>Proof submitted</Text>
-        <Text style={styles.successBody}>
-          Your proof is pending review. You will get points once it is approved.
-        </Text>
-      </View>
-    )
   }
 
   return (
@@ -90,12 +82,7 @@ export function ProofUploader({ attemptId, accessToken, onSuccess }: ProofUpload
       {media ? (
         <View style={styles.preview}>
           {media.isVideo ? (
-            <Video
-              source={{ uri: media.uri }}
-              style={styles.previewMedia}
-              useNativeControls
-              resizeMode={ResizeMode.COVER}
-            />
+            <VideoProof uri={media.uri} style={styles.previewMedia} />
           ) : (
             <Image source={{ uri: media.uri }} style={styles.previewMedia} resizeMode="cover" />
           )}
@@ -203,22 +190,5 @@ const styles = StyleSheet.create({
   submitText: {
     ...typography.label,
     color: colors.primaryForeground,
-  },
-  success: {
-    alignItems: 'center',
-    gap: spacing.sm,
-    padding: spacing.md,
-    backgroundColor: colors.muted,
-    borderRadius: radius.md,
-    marginTop: spacing.md,
-  },
-  successTitle: {
-    ...typography.label,
-    color: colors.foreground,
-  },
-  successBody: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-    textAlign: 'center',
   },
 })

@@ -60,6 +60,19 @@ export async function fetchFeedActivity(accessToken: string) {
   return data.activity ?? []
 }
 
+export async function markFeedSeen(accessToken: string, attemptIds: string[]) {
+  if (attemptIds.length === 0) return
+  const res = await fetch(`${API_URL}/api/feed/seen`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ attemptIds }),
+  })
+  if (!res.ok) await parseApiError(res, 'Could not update feed')
+}
+
 export async function fetchExplore(accessToken: string, query?: string) {
   const params = query?.trim() ? `?q=${encodeURIComponent(query.trim())}` : ''
   const res = await fetch(`${API_URL}/api/explore${params}`, {
@@ -146,6 +159,15 @@ export async function startChallengeAttempt(accessToken: string, challengeId: st
   return res.json() as Promise<{ attemptId: string }>
 }
 
+export async function archiveChallenge(accessToken: string, challengeId: string) {
+  const res = await fetch(`${API_URL}/api/challenges/${challengeId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) await parseApiError(res, 'Could not remove challenge')
+  return res.json() as Promise<{ success: boolean }>
+}
+
 export async function uploadProof(
   accessToken: string,
   attemptId: string,
@@ -215,7 +237,7 @@ export async function fetchMyProfile(accessToken: string) {
 
 export async function updateMyProfile(
   accessToken: string,
-  data: { name?: string; bio?: string }
+  data: { name?: string; bio?: string; isPrivate?: boolean }
 ) {
   const res = await fetch(`${API_URL}/api/users/me`, {
     method: 'PATCH',
@@ -385,6 +407,73 @@ export async function moderateChallenge(
   })
   if (!res.ok) await parseApiError(res, 'Could not review challenge')
   return res.json()
+}
+
+export async function deleteAccount(accessToken: string, username: string) {
+  const res = await fetch(`${API_URL}/api/account`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ confirm: username }),
+  })
+  if (!res.ok) await parseApiError(res, 'Could not delete account')
+  return res.json() as Promise<{ success: boolean }>
+}
+
+export async function fetchNotifications(accessToken: string, cursor?: string) {
+  const params = cursor ? `?cursor=${cursor}` : ''
+  const res = await fetch(`${API_URL}/api/notifications${params}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) await parseApiError(res, 'Could not load notifications')
+  return res.json() as Promise<{
+    notifications: Array<{
+      id: string
+      type: string
+      title: string
+      body: string
+      read: boolean
+      createdAt: string
+      referenceType?: string
+      referenceId?: string
+    }>
+    nextCursor?: string
+  }>
+}
+
+export async function markAllNotificationsRead(accessToken: string) {
+  const res = await fetch(`${API_URL}/api/notifications`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) await parseApiError(res, 'Could not update notifications')
+  return res.json()
+}
+
+export async function fetchUnreadNotificationCount(accessToken: string) {
+  const res = await fetch(`${API_URL}/api/notifications/unread-count`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) return { count: 0 }
+  return res.json() as Promise<{ count: number }>
+}
+
+export async function shareChallengeWithFriend(
+  accessToken: string,
+  friendId: string,
+  challengeId: string,
+  title: string
+) {
+  const { threadId } = await createMessageThread(accessToken, friendId)
+  const url = `${API_URL}/challenge/${challengeId}`
+  await sendMessage(
+    accessToken,
+    threadId,
+    `Check out this challenge: ${title}\n${url}`
+  )
+  return { threadId }
 }
 
 export { API_URL }

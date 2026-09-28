@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getApiUser } from '@/lib/api-auth'
 import { prisma } from '@/lib/db'
 import { hasPermission, Permissions } from '@/lib/permissions'
+import { notifyChallengeReviewResult } from '@/lib/challenge-creator-notify'
 
 export async function POST(
   request: Request,
@@ -26,7 +27,7 @@ export async function POST(
 
   const challenge = await prisma.challenge.findUnique({
     where: { id },
-    select: { creatorId: true, status: true },
+    select: { creatorId: true, status: true, title: true },
   })
 
   if (!challenge) {
@@ -41,16 +42,24 @@ export async function POST(
     return NextResponse.json({ error: 'Cannot review your own challenge' }, { status: 400 })
   }
 
+  const approved = action === 'approve'
+  const aiReviewNote = approved ? 'Approved by moderator.' : 'Rejected by moderator.'
+
   await prisma.challenge.update({
     where: { id },
     data: {
-      status: action === 'approve' ? 'ACTIVE' : 'REJECTED',
-      aiReviewNote:
-        action === 'approve'
-          ? 'Approved by moderator.'
-          : 'Rejected by moderator.',
+      status: approved ? 'ACTIVE' : 'REJECTED',
+      aiReviewNote,
     },
   })
+
+  await notifyChallengeReviewResult(
+    challenge.creatorId,
+    id,
+    challenge.title,
+    approved,
+    aiReviewNote
+  )
 
   return NextResponse.json({ success: true })
 }

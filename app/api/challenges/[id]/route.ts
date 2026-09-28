@@ -25,7 +25,24 @@ export async function GET(
   }
 
   const isCreator = challenge.creatorId === user.id
-  if (challenge.status !== 'ACTIVE' && !isCreator) {
+
+  const userAttempt = await prisma.attempt.findFirst({
+    where: { userId: user.id, challengeId: id },
+    orderBy: { updatedAt: 'desc' },
+    select: { id: true, status: true, updatedAt: true },
+  })
+
+  const hasHistory =
+    userAttempt &&
+    (userAttempt.status === 'APPROVED' ||
+      userAttempt.status === 'PENDING' ||
+      userAttempt.status === 'REJECTED')
+
+  if (challenge.status === 'ARCHIVED') {
+    if (!isCreator && !hasHistory) {
+      return NextResponse.json({ error: 'Challenge is no longer available' }, { status: 404 })
+    }
+  } else if (challenge.status !== 'ACTIVE' && !isCreator) {
     return NextResponse.json({ error: 'Challenge is not available' }, { status: 404 })
   }
 
@@ -50,5 +67,44 @@ export async function GET(
     ...challenge,
     prerequisiteMet,
     draftAttemptId: existingDraft?.id ?? null,
+    myAttempt: userAttempt
+      ? {
+          id: userAttempt.id,
+          status: userAttempt.status,
+          updatedAt: userAttempt.updatedAt,
+        }
+      : null,
+    isCreator,
   })
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const user = await getApiUser(request)
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { id } = await params
+  const challenge = await prisma.challenge.findUnique({
+    where: { id },
+    select: { creatorId: true, status: true },
+  })
+
+  if (!challenge || challenge.creatorId !== user.id) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
+  if (challenge.status === 'ARCHIVED') {
+    return NextResponse.json({ success: true })
+  }
+
+  await prisma.challenge.update({
+    where: { id },
+    data: { status: 'ARCHIVED' },
+  })
+
+  return NextResponse.json({ success: true })
 }

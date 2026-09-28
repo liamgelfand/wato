@@ -368,21 +368,25 @@ async function main() {
   console.log(`✓ ${demoProofs.length} demo proof images ready`)
 
   // Friend completions for the activity feed (demo2–demo5)
+  // demo2 gets the video proof on the fitness challenge
+  const videoProof = demoProofs.find((p) => p.proofType === 'video/mp4')
   const friendCompletions = [
-    { userIndex: 1, challengeIndex: 0 },
-    { userIndex: 2, challengeIndex: 1 },
-    { userIndex: 3, challengeIndex: 2 },
-    { userIndex: 4, challengeIndex: 3 },
+    { userIndex: 1, challengeIndex: 0, proof: videoProof },  // video proof on fitness
+    { userIndex: 2, challengeIndex: 1, proof: null },
+    { userIndex: 3, challengeIndex: 2, proof: null },
+    { userIndex: 4, challengeIndex: 3, proof: null },
+    { userIndex: 1, challengeIndex: 12, proof: null },  // demo2 also completed cooking
+    { userIndex: 2, challengeIndex: 8, proof: null },   // demo3 also completed sunrise
   ]
 
   for (let i = 0; i < friendCompletions.length; i++) {
-    const { userIndex, challengeIndex } = friendCompletions[i]
+    const { userIndex, challengeIndex, proof } = friendCompletions[i]
     const challenge = createdChallenges[challengeIndex]
     await ensureApprovedAttempt(
       users[userIndex].id,
       challenge.id,
       challenge.points,
-      proofForChallenge(demoProofs, challenge.title, challenge.category)
+      proof ?? proofForChallenge(demoProofs, challenge.title, challenge.category)
     )
   }
   console.log('✓ Created sample attempts and points')

@@ -4,7 +4,8 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Trophy, Calendar } from 'lucide-react'
+import { PointsPill } from '@/components/ui/points-pill'
+import { Calendar } from 'lucide-react'
 import { CATEGORY_COLORS, CATEGORY_LABELS, type ChallengeCategoryName } from '@/lib/categories'
 
 interface ChallengeCardProps {
@@ -57,10 +58,7 @@ export function ChallengeCard({ challenge }: ChallengeCardProps) {
             {'★'.repeat(challenge.difficulty)}
             <span className="ml-1">{challenge.difficulty}/5</span>
           </Badge>
-          <Badge variant="outline" className="flex items-center gap-1">
-            <Trophy className="h-3 w-3" />
-            {challenge.points} pts
-          </Badge>
+          <PointsPill points={challenge.points} />
         </div>
       </CardContent>
       <CardFooter className="flex items-center justify-between">

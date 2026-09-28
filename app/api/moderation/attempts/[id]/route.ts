@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getApiUser } from '@/lib/api-auth'
 import { prisma } from '@/lib/db'
 import { awardPoints } from '@/lib/points'
+import { createNotification } from '@/lib/notifications'
 import { hasPermission, Permissions } from '@/lib/permissions'
 
 export async function POST(
@@ -48,6 +49,14 @@ export async function POST(
     await prisma.attempt.update({
       where: { id },
       data: { status: 'REJECTED' },
+    })
+    await createNotification({
+      userId: attempt.userId,
+      type: 'ATTEMPT_REJECTED',
+      referenceType: 'ATTEMPT',
+      referenceId: id,
+      title: 'Attempt not approved',
+      body: `Your "${attempt.challenge.title}" submission was not approved.`,
     })
   }
 

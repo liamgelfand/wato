@@ -31,7 +31,7 @@ export default async function HomePage() {
             Wato
           </h1>
           <p className="text-muted-foreground">
-            Completed challenges from friends and the community
+            Completed challenges from your friends
           </p>
         </div>
         <Button asChild>

@@ -1,9 +1,11 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
 import { resolveMediaUrl } from '../../lib/api'
 import { formatRelativeTime } from '../../lib/format-time'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { hapticLight } from '../../lib/haptics'
+import { useTheme } from '../../hooks/use-theme'
+import { radius, spacing, typography, shadows } from '../../constants/theme'
 
 export type ActivityItem = {
   id: string
@@ -18,84 +20,136 @@ function displayName(user: ActivityItem['user']) {
   return user.name ?? user.username
 }
 
-export function ActivityCard({ item }: { item: ActivityItem }) {
-  const initials = displayName(item.user)
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
+function initials(user: ActivityItem['user']) {
+  return displayName(user).split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+}
+
+export function ActivityCard({ item, onOpen }: { item: ActivityItem; onOpen?: (item: ActivityItem) => void }) {
+  const { colors } = useTheme()
   const proofUri = resolveMediaUrl(item.proofUrl ?? null)
+  const avatarUri = resolveMediaUrl(item.user.avatarUrl ?? null)
+
+  const open = () => {
+    hapticLight()
+    onOpen?.(item)
+    router.push(`/attempt/${item.id}`)
+  }
+
+  if (proofUri) {
+    return (
+      <Pressable
+        onPress={open}
+        style={({ pressed }) => [styles.mediaCard, pressed && styles.pressed]}
+      >
+        <Image source={{ uri: proofUri }} style={styles.mediaFull} resizeMode="cover" />
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.78)']}
+          style={StyleSheet.absoluteFillObject}
+        />
+        <View style={styles.overlay}>
+          <View style={styles.avatarRow}>
+            {avatarUri ? (
+              <Image source={{ uri: avatarUri }} style={styles.avatarSmall} />
+            ) : (
+              <View style={[styles.avatarSmall, styles.avatarSmallFallback]}>
+                <Text style={styles.avatarSmallText}>{initials(item.user)}</Text>
+              </View>
+            )}
+            <View style={styles.overlayMeta}>
+              <Text style={styles.overlayName} numberOfLines={1}>{displayName(item.user)}</Text>
+              <Text style={styles.overlayChallenge} numberOfLines={1}>{item.challenge.title}</Text>
+            </View>
+            <Text style={styles.overlayTime}>{formatRelativeTime(item.updatedAt)}</Text>
+          </View>
+        </View>
+      </Pressable>
+    )
+  }
 
   return (
     <Pressable
-      onPress={() => router.push(`/attempt/${item.id}`)}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      onPress={open}
+      style={({ pressed }) => [
+        styles.textCard,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+        },
+        pressed && styles.pressed,
+      ]}
     >
       <View style={styles.header}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{initials}</Text>
-        </View>
+        {avatarUri ? (
+          <Image source={{ uri: avatarUri }} style={styles.avatar} />
+        ) : (
+          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+            <Text style={[styles.avatarText, { color: colors.primaryForeground }]}>{initials(item.user)}</Text>
+          </View>
+        )}
         <View style={styles.meta}>
-          <Text style={styles.name}>{displayName(item.user)}</Text>
-          <Text style={styles.subtitle}>
-            completed <Text style={styles.challengeTitle}>{item.challenge.title}</Text>
+          <Text style={[styles.name, { color: colors.foreground }]}>{displayName(item.user)}</Text>
+          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+            completed{' '}
+            <Text style={[styles.challengeTitle, { color: colors.foreground }]}>{item.challenge.title}</Text>
           </Text>
-          <Text style={styles.time}>{formatRelativeTime(item.updatedAt)}</Text>
-        </View>
-        <View style={styles.points}>
-          <Ionicons name="trophy" size={14} color={colors.primary} />
-          <Text style={styles.pointsText}>+{item.challenge.points}</Text>
+          <Text style={[styles.time, { color: colors.mutedForeground }]}>{formatRelativeTime(item.updatedAt)}</Text>
         </View>
       </View>
-
-      {proofUri ? (
-        <Image source={{ uri: proofUri }} style={styles.proofThumb} resizeMode="cover" />
-      ) : null}
-
-      {item.source === 'friend' ? <Text style={styles.badge}>Friend</Text> : null}
     </Pressable>
   )
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-  },
   pressed: { opacity: 0.92 },
-  header: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.muted,
+  mediaCard: {
+    width: '100%',
+    aspectRatio: 4 / 5,
+    borderRadius: radius.xl,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+    ...shadows.sm,
+  },
+  mediaFull: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  overlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: spacing.md,
+  },
+  avatarRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  avatarSmall: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.6)',
+  },
+  avatarSmallFallback: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { ...typography.label, color: colors.foreground, fontSize: 13 },
+  avatarSmallText: { ...typography.caption, color: '#fff', fontWeight: '700', fontSize: 12 },
+  overlayMeta: { flex: 1 },
+  overlayName: { color: '#fff', fontFamily: 'DMSans_700Bold', fontSize: 15, letterSpacing: -0.2 },
+  overlayChallenge: { color: 'rgba(255,255,255,0.8)', fontFamily: 'DMSans_500Medium', fontSize: 13, marginTop: 2 },
+  overlayTime: { color: 'rgba(255,255,255,0.65)', fontFamily: 'DMSans_400Regular', fontSize: 12 },
+  textCard: {
+    borderRadius: radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    ...shadows.sm,
+  },
+  header: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  avatar: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden' },
+  avatarText: { ...typography.label, fontSize: 14 },
   meta: { flex: 1 },
-  name: { ...typography.label, color: colors.foreground },
-  subtitle: { ...typography.caption, color: colors.mutedForeground, marginTop: 2 },
-  challengeTitle: { color: colors.foreground, fontWeight: '600' },
-  time: { ...typography.caption, color: colors.mutedForeground, marginTop: 4, fontSize: 12 },
-  points: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  pointsText: { ...typography.caption, color: colors.primary, fontWeight: '700' },
-  proofThumb: {
-    width: '100%',
-    height: 180,
-    borderRadius: radius.md,
-    marginTop: spacing.sm,
-    backgroundColor: colors.muted,
-  },
-  badge: {
-    ...typography.caption,
-    color: colors.primary,
-    marginTop: spacing.sm,
-    fontWeight: '600',
-  },
+  name: { fontFamily: 'DMSans_700Bold', fontSize: 15 },
+  subtitle: { ...typography.caption, marginTop: 2 },
+  challengeTitle: { fontFamily: 'DMSans_600SemiBold' },
+  time: { ...typography.caption, marginTop: 4, fontSize: 12 },
 })

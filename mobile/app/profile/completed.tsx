@@ -5,17 +5,21 @@ import { Ionicons } from '@expo/vector-icons'
 import { ChallengeCard, type ChallengeItem } from '../../components/ui/challenge-card'
 import { Screen } from '../../components/ui/screen'
 import { AuthLoading, useAuthToken } from '../../hooks/use-auth-token'
+import { useTheme } from '../../hooks/use-theme'
 import { fetchMyProfile } from '../../lib/api'
-import { colors, spacing, typography } from '../../constants/theme'
+import { formatRelativeTime, formatTimestamp } from '../../lib/format-time'
+import { type AppColors, spacing, typography } from '../../constants/theme'
 
 type CompletedItem = {
   attemptId: string
+  completedAt: string
   pointsEarned: number
   challenge: ChallengeItem
 }
 
 export default function CompletedChallengesScreen() {
   const { token, loading: authLoading } = useAuthToken()
+  const { colors } = useTheme()
   const [items, setItems] = useState<CompletedItem[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -27,12 +31,12 @@ export default function CompletedChallengesScreen() {
 
   useEffect(() => {
     if (!token) return
-    load(token)
-      .catch(() => {})
-      .finally(() => setLoading(false))
+    load(token).catch(() => {}).finally(() => setLoading(false))
   }, [token, load])
 
   if (authLoading || loading) return <AuthLoading />
+
+  const styles = makeStyles(colors)
 
   return (
     <Screen padded={false}>
@@ -53,22 +57,25 @@ export default function CompletedChallengesScreen() {
             onRefresh={async () => {
               if (!token) return
               setRefreshing(true)
-              try {
-                await load(token)
-              } finally {
-                setRefreshing(false)
-              }
+              try { await load(token) } finally { setRefreshing(false) }
             }}
             tintColor={colors.primary}
           />
         }
         ListEmptyComponent={
-          <Text style={styles.empty}>No completed challenges yet. Finish one to earn points.</Text>
+          <View style={styles.emptyWrap}>
+            <Text style={styles.emptyTitle}>No completions yet</Text>
+            <Text style={styles.empty}>Finish a challenge and upload your proof.</Text>
+          </View>
         }
         renderItem={({ item }) => (
-          <View>
+          <View style={styles.row}>
             <ChallengeCard challenge={item.challenge} />
-            <Text style={styles.points}>+{item.pointsEarned} pts earned</Text>
+            <View style={styles.footer}>
+              <Text style={styles.completedAt}>
+                {formatTimestamp(item.completedAt)} · {formatRelativeTime(item.completedAt)}
+              </Text>
+            </View>
           </View>
         )}
       />
@@ -76,35 +83,36 @@ export default function CompletedChallengesScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: {
-    flex: 1,
-    textAlign: 'center',
-    ...typography.label,
-    color: colors.foreground,
-  },
-  list: { padding: spacing.md, flexGrow: 1 },
-  points: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: '600',
-    marginTop: -4,
-    marginBottom: spacing.sm,
-    marginLeft: spacing.xs,
-  },
-  empty: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-    paddingTop: spacing.xl,
-  },
-})
+function makeStyles(colors: AppColors) {
+  return StyleSheet.create({
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.sm,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+    title: { flex: 1, textAlign: 'center', ...typography.label, color: colors.foreground },
+    list: { padding: spacing.md, flexGrow: 1 },
+    row: { marginBottom: spacing.xs },
+    footer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: -4,
+      marginBottom: spacing.sm,
+      marginHorizontal: spacing.xs,
+    },
+    completedAt: { ...typography.caption, color: colors.mutedForeground, flex: 1 },
+    emptyWrap: { alignItems: 'center', paddingTop: 56, paddingHorizontal: spacing.md },
+    emptyTitle: {
+      fontFamily: 'DMSans_700Bold',
+      fontSize: 20,
+      color: colors.foreground,
+      marginBottom: spacing.sm,
+    },
+    empty: { ...typography.caption, color: colors.mutedForeground, textAlign: 'center' },
+  })
+}

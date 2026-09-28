@@ -18,6 +18,9 @@ install: ## Install npm dependencies
 dev: docker-db ## Local dev: Postgres in Docker, app on host with hot reload
 	npm run dev
 
+dev-all: docker-db ## Start everything: DB + API + Expo in one terminal
+	npx concurrently --names "api,mobile" --prefix-colors "cyan,magenta" "npm run dev" "cd mobile && npm start"
+
 docker-up: ## Run full stack in Docker (DB + app)
 	docker compose up db -d --wait
 	npm run db:migrate:deploy

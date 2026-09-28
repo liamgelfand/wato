@@ -2,11 +2,10 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { getUserBadges } from '@/lib/badges'
 import { getUserStreak } from '@/lib/streaks'
 import { isFollowing, followUser, unfollowUser } from '@/lib/follows'
 import { areFriends } from '@/lib/friends'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -51,8 +50,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
   }
 
   const isSelf = user.id === session.user.id
-  const [badges, streak, following, friends] = await Promise.all([
-    getUserBadges(user.id),
+  const [streak, following, friends] = await Promise.all([
     getUserStreak(user.id),
     isFollowing(session.user.id, user.id),
     areFriends(session.user.id, user.id),
@@ -104,27 +102,6 @@ export default async function PublicProfilePage({ params }: PageProps) {
           )}
         </CardContent>
       </Card>
-
-      {badges.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Badges</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {badges.map((badge) => (
-                <div key={badge.id} className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
-                  <span className="text-2xl">{badge.icon}</span>
-                  <div>
-                    <p className="font-medium text-sm">{badge.name}</p>
-                    <p className="text-xs text-muted-foreground">{badge.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

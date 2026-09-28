@@ -2,21 +2,24 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   FlatList,
   Keyboard,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   TextInput,
   View,
-  Platform,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { BlurView } from 'expo-blur'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ActivityCard, type ActivityItem } from '../../components/feed/activity-card'
 import { ChallengeCard, type ChallengeItem } from '../../components/ui/challenge-card'
-import { Screen } from '../../components/ui/screen'
+import { SkeletonList } from '../../components/ui/skeleton'
 import { AuthLoading, useAuthToken } from '../../hooks/use-auth-token'
+import { useTheme } from '../../hooks/use-theme'
 import { fetchExplore, fetchTrending } from '../../lib/api'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { radius, spacing, typography } from '../../constants/theme'
 
 type ExploreSection =
   | { key: string; type: 'header'; title: string; subtitle?: string }
@@ -45,6 +48,8 @@ function toChallengeItem(c: {
 
 export default function ExploreTab() {
   const { token, loading: authLoading } = useAuthToken()
+  const { colors, isDark } = useTheme()
+  const insets = useSafeAreaInsets()
   const [activity, setActivity] = useState<ActivityItem[]>([])
   const [recommendations, setRecommendations] = useState<ChallengeItem[]>([])
   const [searchResults, setSearchResults] = useState<ChallengeItem[]>([])
@@ -164,48 +169,60 @@ export default function ExploreTab() {
     return rows
   }, [activity, recommendations, searchResults, query])
 
-  if (authLoading || loading) return <AuthLoading />
+  if (authLoading) return <AuthLoading />
+
+  const tabBarBottom = insets.bottom + 56 + 8
+  const HEADER_INNER = 120 // title + search bar
+  const headerHeight = insets.top + HEADER_INNER
 
   return (
-    <Screen padded={false}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Explore</Text>
-        <View style={styles.searchField}>
-          <Ionicons name="search" size={18} color={colors.mutedForeground} />
-          <TextInput
-            value={searchInput}
-            onChangeText={setSearchInput}
-            placeholder="Search challenges"
-            placeholderTextColor={colors.mutedForeground}
-            style={styles.searchInput}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="search"
-            onSubmitEditing={() => Keyboard.dismiss()}
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      {/* Sticky blur header */}
+      {Platform.OS === 'ios' ? (
+        <BlurView intensity={75} tint={isDark ? 'dark' : 'light'} style={[styles.header, { paddingTop: insets.top + 6 }]}>
+          <HeaderContent
+            colors={colors}
+            searchInput={searchInput}
+            setSearchInput={setSearchInput}
           />
-          {searchInput.length > 0 ? (
-            <Pressable onPress={() => setSearchInput('')} hitSlop={8} style={styles.clearBtn}>
-              <Ionicons name="close-circle" size={18} color={colors.mutedForeground} />
-            </Pressable>
-          ) : null}
+        </BlurView>
+      ) : (
+        <View style={[styles.header, { paddingTop: insets.top + 6, backgroundColor: colors.headerBlur }]}>
+          <HeaderContent
+            colors={colors}
+            searchInput={searchInput}
+            setSearchInput={setSearchInput}
+          />
         </View>
-      </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      )}
+
+      {error ? (
+        <Text style={[styles.error, { color: colors.destructive, marginTop: headerHeight }]}>{error}</Text>
+      ) : null}
+
       <FlatList
-        data={sections}
+        data={loading ? [] : sections}
         keyExtractor={(item) => item.key}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingTop: headerHeight, paddingBottom: tabBarBottom + 24 }]}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            progressViewOffset={headerHeight}
+          />
         }
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
+        ListHeaderComponent={loading ? <View style={{ paddingTop: 8 }}><SkeletonList count={3} /></View> : null}
         renderItem={({ item }) => {
           if (item.type === 'header') {
             return (
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>{item.title}</Text>
-                {item.subtitle ? <Text style={styles.sectionSubtitle}>{item.subtitle}</Text> : null}
+                <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{item.title}</Text>
+                {item.subtitle ? (
+                  <Text style={[styles.sectionSubtitle, { color: colors.mutedForeground }]}>{item.subtitle}</Text>
+                ) : null}
               </View>
             )
           }
@@ -215,35 +232,68 @@ export default function ExploreTab() {
           return <ChallengeCard challenge={item.item} />
         }}
       />
-    </Screen>
+    </View>
+  )
+}
+
+type HeaderContentProps = {
+  colors: ReturnType<typeof useTheme>['colors']
+  searchInput: string
+  setSearchInput: (v: string) => void
+}
+
+function HeaderContent({ colors, searchInput, setSearchInput }: HeaderContentProps) {
+  return (
+    <View style={styles.headerContent}>
+      <Text style={[styles.headerTitle, { color: colors.foreground }]}>Explore</Text>
+      <View style={[styles.searchField, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Ionicons name="search" size={18} color={colors.mutedForeground} />
+        <TextInput
+          value={searchInput}
+          onChangeText={setSearchInput}
+          placeholder="Search challenges"
+          placeholderTextColor={colors.mutedForeground}
+          style={[styles.searchInput, { color: colors.foreground }]}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+          onSubmitEditing={() => Keyboard.dismiss()}
+        />
+        {searchInput.length > 0 ? (
+          <Pressable onPress={() => setSearchInput('')} hitSlop={8} style={styles.clearBtn}>
+            <Ionicons name="close-circle" size={18} color={colors.mutedForeground} />
+          </Pressable>
+        ) : null}
+      </View>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1 },
   header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.background,
+    paddingBottom: 12,
   },
+  headerContent: {},
   headerTitle: {
     ...typography.title,
     fontSize: 28,
     lineHeight: 34,
-    color: colors.foreground,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   searchField: {
     flexDirection: 'row',
     alignItems: 'center',
     height: 44,
-    backgroundColor: colors.card,
     borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
     borderWidth: 1,
-    borderColor: colors.border,
     gap: 10,
   },
   searchInput: {
@@ -252,23 +302,17 @@ const styles = StyleSheet.create({
     ...typography.body,
     fontSize: 16,
     lineHeight: Platform.OS === 'ios' ? 20 : 22,
-    color: colors.foreground,
     paddingVertical: 0,
     margin: 0,
     ...(Platform.OS === 'android' ? { includeFontPadding: false, textAlignVertical: 'center' } : {}),
   },
-  clearBtn: {
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  clearBtn: { height: 44, justifyContent: 'center', alignItems: 'center' },
   error: {
     ...typography.caption,
-    color: colors.destructive,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
   },
-  list: { padding: spacing.md, flexGrow: 1 },
+  list: { paddingHorizontal: spacing.md, flexGrow: 1 },
   sectionHeader: {
     marginTop: spacing.md,
     marginBottom: spacing.sm,
@@ -276,11 +320,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...typography.heading,
     fontSize: 18,
-    color: colors.foreground,
   },
   sectionSubtitle: {
     ...typography.caption,
-    color: colors.mutedForeground,
     marginTop: 4,
   },
 })

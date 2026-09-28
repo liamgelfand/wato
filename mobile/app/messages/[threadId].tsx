@@ -14,9 +14,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/ui/screen'
 import { AuthLoading, useAuthToken } from '../../hooks/use-auth-token'
+import { useTheme } from '../../hooks/use-theme'
 import { fetchMessageThread, sendMessage } from '../../lib/api'
 import { formatMessageTime } from '../../lib/format-time'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { type AppColors, radius, spacing, typography } from '../../constants/theme'
 
 type Message = {
   id: string
@@ -29,6 +30,7 @@ type Message = {
 export default function MessageThreadScreen() {
   const { threadId } = useLocalSearchParams<{ threadId: string }>()
   const { token, loading: authLoading } = useAuthToken()
+  const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const [messages, setMessages] = useState<Message[]>([])
   const [otherName, setOtherName] = useState('Chat')
@@ -51,9 +53,7 @@ export default function MessageThreadScreen() {
 
   useEffect(() => {
     if (!token || !threadId) return
-    load()
-      .catch(() => {})
-      .finally(() => setLoading(false))
+    load().catch(() => {}).finally(() => setLoading(false))
   }, [token, threadId, load])
 
   const onSend = async () => {
@@ -82,6 +82,7 @@ export default function MessageThreadScreen() {
 
   if (authLoading || loading) return <AuthLoading />
 
+  const styles = makeStyles(colors)
   const keyboardOffset = insets.top + 48
 
   return (
@@ -104,9 +105,6 @@ export default function MessageThreadScreen() {
           contentContainerStyle={styles.messages}
           keyboardDismissMode="interactive"
           keyboardShouldPersistTaps="handled"
-          onScrollBeginDrag={() => {
-            // allows swipe-down dismiss on iOS via keyboardDismissMode
-          }}
           renderItem={({ item }) => {
             const mine = myId ? item.sender.id === myId : false
             return (
@@ -148,67 +146,69 @@ export default function MessageThreadScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  topTitle: { ...typography.heading, fontSize: 17, flex: 1, textAlign: 'center' },
-  messages: { padding: spacing.md, flexGrow: 1 },
-  bubbleWrap: { marginBottom: spacing.sm },
-  mineWrap: { alignItems: 'flex-end' },
-  theirsWrap: { alignItems: 'flex-start' },
-  bubble: {
-    maxWidth: '82%',
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-  },
-  mineBubble: { backgroundColor: colors.primary },
-  theirsBubble: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
-  bubbleText: { ...typography.body, fontSize: 15, color: colors.foreground },
-  mineText: { color: colors.primaryForeground },
-  metaRow: { flexDirection: 'row', marginTop: 4, paddingHorizontal: 4 },
-  metaRowMine: { justifyContent: 'flex-end' },
-  timeText: { ...typography.caption, fontSize: 11, color: colors.mutedForeground },
-  seenText: { ...typography.caption, fontSize: 11, color: colors.primary, fontWeight: '600' },
-  composer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  input: {
-    flex: 1,
-    minHeight: 42,
-    maxHeight: 120,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    ...typography.body,
-    fontSize: 15,
-    color: colors.foreground,
-    backgroundColor: colors.background,
-  },
-  sendBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sendDisabled: { opacity: 0.5 },
-})
+function makeStyles(colors: AppColors) {
+  return StyleSheet.create({
+    flex: { flex: 1 },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.sm,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+    topTitle: { ...typography.heading, fontSize: 17, flex: 1, textAlign: 'center', color: colors.foreground },
+    messages: { padding: spacing.md, flexGrow: 1 },
+    bubbleWrap: { marginBottom: spacing.sm },
+    mineWrap: { alignItems: 'flex-end' },
+    theirsWrap: { alignItems: 'flex-start' },
+    bubble: {
+      maxWidth: '82%',
+      borderRadius: radius.lg,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 10,
+    },
+    mineBubble: { backgroundColor: colors.primary },
+    theirsBubble: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
+    bubbleText: { ...typography.body, fontSize: 15, color: colors.foreground },
+    mineText: { color: colors.primaryForeground },
+    metaRow: { flexDirection: 'row', marginTop: 4, paddingHorizontal: 4 },
+    metaRowMine: { justifyContent: 'flex-end' },
+    timeText: { ...typography.caption, fontSize: 11, color: colors.mutedForeground },
+    seenText: { ...typography.caption, fontSize: 11, color: colors.primary, fontWeight: '600' },
+    composer: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.sm,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+      backgroundColor: colors.card,
+    },
+    input: {
+      flex: 1,
+      minHeight: 42,
+      maxHeight: 120,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.lg,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 10,
+      ...typography.body,
+      fontSize: 15,
+      color: colors.foreground,
+      backgroundColor: colors.background,
+    },
+    sendBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    sendDisabled: { opacity: 0.5 },
+  })
+}

@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import { ScrollView, StyleSheet, View, type ViewStyle } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { colors, spacing } from '../../constants/theme'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useTheme } from '../../hooks/use-theme'
+import { spacing } from '../../constants/theme'
 
 type ScreenProps = {
   children: ReactNode
@@ -11,40 +12,45 @@ type ScreenProps = {
 }
 
 export function Screen({ children, scroll = false, style, padded = true }: ScreenProps) {
-  const content = (
-    <View style={[styles.inner, padded && styles.padded, style]}>{children}</View>
+  const { colors } = useTheme()
+  const insets = useSafeAreaInsets()
+
+  const inner = (
+    <View
+      style={[
+        styles.inner,
+        { paddingTop: insets.top, paddingLeft: insets.left, paddingRight: insets.right },
+        padded && styles.padded,
+        style,
+      ]}
+    >
+      {children}
+    </View>
   )
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+    <View style={[styles.safe, { backgroundColor: colors.background }]}>
       {scroll ? (
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {content}
+          {inner}
         </ScrollView>
       ) : (
-        content
+        inner
       )}
-    </SafeAreaView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  inner: {
-    flex: 1,
-  },
+  safe: { flex: 1 },
+  inner: { flex: 1 },
   padded: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.lg,
   },
-  scrollContent: {
-    flexGrow: 1,
-  },
+  scrollContent: { flexGrow: 1 },
 })

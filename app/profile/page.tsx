@@ -1,13 +1,14 @@
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { formatDistanceToNow, format } from 'date-fns'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { getUserBadges } from '@/lib/badges'
 import { getUserStreak } from '@/lib/streaks'
 import { DeleteAccountButton } from '@/components/profile/delete-account-button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { PrivacyToggle } from '@/components/profile/privacy-toggle'
+import { PointsPill } from '@/components/ui/points-pill'
 
 export default async function ProfilePage() {
   const session = await auth()
@@ -28,7 +29,7 @@ export default async function ProfilePage() {
       totalPoints: true,
       attempts: {
         where: { status: 'APPROVED' },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { updatedAt: 'desc' },
         take: 10,
         include: { challenge: true },
       },
@@ -44,7 +45,6 @@ export default async function ProfilePage() {
     redirect('/login')
   }
 
-  const badges = await getUserBadges(user.id)
   const streak = await getUserStreak(user.id)
 
   const initials = user.name
@@ -67,7 +67,7 @@ export default async function ProfilePage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
               <div className="text-3xl font-bold text-primary">{user.totalPoints}</div>
               <div className="text-sm text-muted-foreground">Total Points</div>
@@ -79,10 +79,6 @@ export default async function ProfilePage() {
             <div className="text-center">
               <div className="text-3xl font-bold">{user.challenges.length}</div>
               <div className="text-sm text-muted-foreground">Created</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold">{badges.length}</div>
-              <div className="text-sm text-muted-foreground">Badges</div>
             </div>
           </div>
           {streak && streak.currentStreak > 0 && (
@@ -96,33 +92,26 @@ export default async function ProfilePage() {
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Privacy</CardTitle>
+          <CardTitle>Privacy & legal</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           <PrivacyToggle isPrivate={user.isPrivate} />
+          <div className="space-y-2 text-sm">
+            <p className="text-muted-foreground">Policies and safety information:</p>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/legal/privacy" className="text-primary hover:underline">
+                Privacy Policy
+              </Link>
+              <Link href="/legal/terms" className="text-primary hover:underline">
+                Terms of Service
+              </Link>
+              <Link href="/safety" className="text-primary hover:underline">
+                Safety
+              </Link>
+            </div>
+          </div>
         </CardContent>
       </Card>
-
-      {badges.length > 0 && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Badges & achievements</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {badges.map((badge) => (
-                <div key={badge.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                  <span className="text-2xl" role="img" aria-label={badge.name}>{badge.icon}</span>
-                  <div>
-                    <p className="font-medium text-sm">{badge.name}</p>
-                    <p className="text-xs text-muted-foreground">{badge.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <Card className="mb-6">
         <CardHeader>
@@ -144,17 +133,24 @@ export default async function ProfilePage() {
             </p>
           ) : (
             <div className="space-y-4">
-              {user.attempts.map((attempt) => (
-                <div key={attempt.id} className="flex items-center justify-between border-b pb-4 last:border-0">
-                  <div>
-                    <h3 className="font-semibold">{attempt.challenge.title}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Completed {new Date(attempt.updatedAt).toLocaleDateString()}
-                    </p>
+              {user.attempts.map((attempt) => {
+                const completedAt = new Date(attempt.updatedAt)
+                return (
+                  <div
+                    key={attempt.id}
+                    className="flex items-center justify-between gap-4 border-b pb-4 last:border-0"
+                  >
+                    <div className="min-w-0">
+                      <h3 className="font-semibold">{attempt.challenge.title}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {format(completedAt, 'MMM d, yyyy · h:mm a')} ·{' '}
+                        {formatDistanceToNow(completedAt, { addSuffix: true })}
+                      </p>
+                    </div>
+                    <PointsPill points={attempt.challenge.points} />
                   </div>
-                  <Badge variant="secondary">+{attempt.challenge.points} pts</Badge>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </CardContent>

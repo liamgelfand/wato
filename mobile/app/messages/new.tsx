@@ -5,12 +5,14 @@ import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/ui/screen'
 import { AuthLoading, useAuthToken } from '../../hooks/use-auth-token'
 import { createMessageThread, fetchFriends } from '../../lib/api'
-import { colors, spacing, typography } from '../../constants/theme'
+import { useTheme } from '../../hooks/use-theme'
+import { type AppColors, spacing, typography } from '../../constants/theme'
 
 type Friend = { id: string; username: string; name: string | null }
 
 export default function NewMessageScreen() {
   const { token, loading: authLoading } = useAuthToken()
+  const { colors } = useTheme()
   const [friends, setFriends] = useState<Friend[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -44,6 +46,8 @@ export default function NewMessageScreen() {
 
   if (authLoading || loading) return <AuthLoading />
 
+  const styles = makeStyles(colors)
+
   return (
     <Screen padded={false}>
       <View style={styles.topBar}>
@@ -76,7 +80,7 @@ export default function NewMessageScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(colors: AppColors) { return StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -108,4 +112,4 @@ const styles = StyleSheet.create({
   rowPressed: { backgroundColor: colors.muted },
   name: { ...typography.label, color: colors.foreground },
   handle: { ...typography.caption, color: colors.mutedForeground, marginTop: 2 },
-})
+}) }

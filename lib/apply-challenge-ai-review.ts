@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db'
 import { reviewChallengeWithAI } from '@/lib/challenge-ai-review'
 import { getModeratorUserIds } from '@/lib/moderators'
 import { createNotification } from '@/lib/notifications'
+import { notifyChallengeReviewResult } from '@/lib/challenge-creator-notify'
 import type { ChallengeStatus } from '@prisma/client'
 
 export const REVIEW_IN_PROGRESS = 'AI review in progress…'
@@ -34,6 +35,17 @@ export async function applyChallengeAiReview(
     where: { id: challengeId },
     data: { status, aiReviewNote },
   })
+
+  if (status === 'ACTIVE' || status === 'REJECTED') {
+    await notifyChallengeReviewResult(
+      creator.id,
+      challengeId,
+      title,
+      status === 'ACTIVE',
+      aiReviewNote
+    )
+    return
+  }
 
   if (status !== 'PENDING_REVIEW') {
     return

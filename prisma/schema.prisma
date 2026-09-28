@@ -19,6 +19,7 @@ enum ChallengeStatus {
   ACTIVE
   REJECTED
   HIDDEN
+  ARCHIVED
 }
 
 enum ChallengeCategory {
@@ -76,6 +77,8 @@ enum NotificationType {
   VERIFICATION_VOTE
   ATTEMPT_APPROVED
   ATTEMPT_REJECTED
+  CHALLENGE_APPROVED
+  CHALLENGE_REJECTED
   ATTEMPT_COMMENT
   ATTEMPT_REACTION
   ATTEMPT_UPVOTE
@@ -135,6 +138,7 @@ model User {
   teamsCreated      Team[]         @relation("TeamCreator")
   teamMemberships   TeamMember[]
   attemptTags       AttemptTag[]   @relation("TaggedUser")
+  feedImpressions   FeedImpression[]
   
   // NextAuth
   accounts          Account[]
@@ -228,11 +232,25 @@ model Attempt {
   reactions         AttemptReaction[]
   tags              AttemptTag[]
   pointsLedger    PointsLedger?
+  feedImpressions FeedImpression[]
   
   @@index([userId])
   @@index([challengeId])
   @@index([status])
   @@index([createdAt])
+}
+
+model FeedImpression {
+  id        String   @id @default(cuid())
+  userId    String
+  attemptId String
+  seenAt    DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempt Attempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, attemptId])
+  @@index([userId, seenAt])
 }
 
 model VerificationVote {

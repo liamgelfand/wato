@@ -8,6 +8,8 @@
   },
   "scripts": {
     "dev": "next dev",
+    "dev:mobile": "cd mobile && npm start",
+    "dev:all": "docker compose up db -d --wait && concurrently --names \"api,mobile\" --prefix-colors \"cyan,magenta\" \"npm run dev\" \"npm run dev:mobile\"",
     "build": "next build",
     "start": "next start",
     "lint": "eslint --config config/eslint.config.mjs app components lib middleware.ts tests",
@@ -80,6 +82,7 @@
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^10.0.5",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "jest": "^29.7.0",

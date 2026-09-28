@@ -14,17 +14,16 @@ import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Screen } from '../components/ui/screen'
 import { useAuthToken } from '../hooks/use-auth-token'
+import { useTheme } from '../hooks/use-theme'
 import { createChallenge } from '../lib/api'
-import {
-  CATEGORY_LABELS,
-  type ChallengeCategory,
-} from '../constants/categories'
-import { colors, radius, spacing, typography } from '../constants/theme'
+import { CATEGORY_LABELS, type ChallengeCategory } from '../constants/categories'
+import { type AppColors, radius, spacing, typography } from '../constants/theme'
 
 const CATEGORIES = Object.keys(CATEGORY_LABELS) as ChallengeCategory[]
 
 export default function CreateChallengeScreen() {
   const { token } = useAuthToken()
+  const { colors } = useTheme()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState<ChallengeCategory>('FITNESS')
@@ -50,6 +49,8 @@ export default function CreateChallengeScreen() {
     }
   }
 
+  const styles = makeStyles(colors)
+
   return (
     <Screen padded={false}>
       <View style={styles.topBar}>
@@ -60,20 +61,11 @@ export default function CreateChallengeScreen() {
         <View style={styles.iconBtn} />
       </View>
 
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
           {error && <Text style={styles.error}>{error}</Text>}
 
-          <Input
-            label="Title"
-            value={title}
-            onChangeText={setTitle}
-            placeholder="30 pushups in 1 minute"
-            maxLength={100}
-          />
+          <Input label="Title" value={title} onChangeText={setTitle} placeholder="30 pushups in 1 minute" maxLength={100} />
 
           <Input
             label="Description"
@@ -119,87 +111,44 @@ export default function CreateChallengeScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  topTitle: {
-    flex: 1,
-    textAlign: 'center',
-    ...typography.label,
-    color: colors.foreground,
-  },
-  form: {
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  error: {
-    ...typography.caption,
-    color: colors.destructive,
-    marginBottom: spacing.sm,
-  },
-  fieldLabel: {
-    ...typography.label,
-    color: colors.foreground,
-    marginBottom: spacing.sm,
-  },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  chipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  chipText: {
-    ...typography.caption,
-    color: colors.foreground,
-    fontWeight: '600',
-  },
-  chipTextActive: {
-    color: colors.primaryForeground,
-  },
-  difficultyRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: spacing.lg,
-  },
-  dot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  dotActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-})
+function makeStyles(colors: AppColors) {
+  return StyleSheet.create({
+    flex: { flex: 1 },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.sm,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    iconBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+    topTitle: { flex: 1, textAlign: 'center', ...typography.label, color: colors.foreground },
+    form: { padding: spacing.md, paddingBottom: spacing.xl },
+    error: { ...typography.caption, color: colors.destructive, marginBottom: spacing.sm },
+    fieldLabel: { ...typography.label, color: colors.foreground, marginBottom: spacing.sm },
+    textArea: { minHeight: 100, textAlignVertical: 'top' },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
+    chip: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: radius.full,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+    },
+    chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    chipText: { ...typography.caption, color: colors.foreground, fontWeight: '600' },
+    chipTextActive: { color: colors.primaryForeground },
+    difficultyRow: { flexDirection: 'row', gap: 10, marginBottom: spacing.lg },
+    dot: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+    },
+    dotActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  })
+}

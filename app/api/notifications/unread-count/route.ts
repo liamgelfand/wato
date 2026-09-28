@@ -1,17 +1,15 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { getApiUser } from '@/lib/api-auth'
 import { getUnreadCount } from '@/lib/notifications'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const session = await auth()
-
-    if (!session?.user) {
+    const user = await getApiUser(request)
+    if (!user) {
       return NextResponse.json({ count: 0 })
     }
 
-    const count = await getUnreadCount(session.user.id)
-
+    const count = await getUnreadCount(user.id)
     return NextResponse.json({ count })
   } catch (error) {
     console.error('Unread count error:', error)

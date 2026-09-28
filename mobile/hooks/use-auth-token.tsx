@@ -2,16 +2,24 @@ import { useEffect, useState } from 'react'
 import { ActivityIndicator, View, StyleSheet, Text } from 'react-native'
 import { router } from 'expo-router'
 import { getItemAsync } from '../lib/storage'
-import { colors, typography } from '../constants/theme'
+import { useTheme } from './use-theme'
+import { typography } from '../constants/theme'
 
 export function useAuthToken() {
   const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getItemAsync('accessToken').then((t) => {
+    Promise.all([
+      getItemAsync('accessToken'),
+      getItemAsync('onboardingDone'),
+    ]).then(([t, onboarded]) => {
       if (!t) {
-        router.replace('/login')
+        if (!onboarded) {
+          router.replace('/onboarding')
+        } else {
+          router.replace('/login')
+        }
       } else {
         setToken(t)
       }
@@ -23,10 +31,10 @@ export function useAuthToken() {
 }
 
 export function AuthLoading() {
+  const { colors } = useTheme()
   return (
-    <View style={styles.centered}>
+    <View style={[styles.centered, { backgroundColor: colors.background }]}>
       <ActivityIndicator size="large" color={colors.primary} />
-      <Text style={styles.text}>Loading…</Text>
     </View>
   )
 }
@@ -37,10 +45,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
-    backgroundColor: colors.background,
   },
   text: {
     ...typography.caption,
-    color: colors.mutedForeground,
   },
 })

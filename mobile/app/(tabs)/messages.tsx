@@ -5,8 +5,9 @@ import { Ionicons } from '@expo/vector-icons'
 import { Button } from '../../components/ui/button'
 import { Screen } from '../../components/ui/screen'
 import { AuthLoading, useAuthToken } from '../../hooks/use-auth-token'
+import { useTheme } from '../../hooks/use-theme'
 import { fetchMessageThreads } from '../../lib/api'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { type AppColors, radius, spacing, typography } from '../../constants/theme'
 
 type ThreadItem = {
   id: string
@@ -25,6 +26,7 @@ function preview(body: string) {
 
 export default function MessagesTab() {
   const { token, loading: authLoading } = useAuthToken()
+  const { colors } = useTheme()
   const [threads, setThreads] = useState<ThreadItem[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -53,14 +55,12 @@ export default function MessagesTab() {
   const onRefresh = async () => {
     if (!token) return
     setRefreshing(true)
-    try {
-      await load(token)
-    } finally {
-      setRefreshing(false)
-    }
+    try { await load(token) } finally { setRefreshing(false) }
   }
 
   if (authLoading || loading) return <AuthLoading />
+
+  const styles = makeStyles(colors)
 
   return (
     <Screen padded={false}>
@@ -140,60 +140,62 @@ export default function MessagesTab() {
   )
 }
 
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  headerText: { flex: 1 },
-  headerTitle: { ...typography.title, fontSize: 26, color: colors.foreground },
-  headerSubtitle: { ...typography.caption, color: colors.mutedForeground, marginTop: 4 },
-  newBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.muted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  errorBox: { padding: spacing.md, gap: spacing.sm },
-  error: { ...typography.caption, color: colors.destructive },
-  list: { flexGrow: 1 },
-  empty: { alignItems: 'center', paddingTop: 48, paddingHorizontal: spacing.lg },
-  emptyTitle: { ...typography.heading, fontSize: 18, color: colors.foreground, marginBottom: 6 },
-  emptyBody: { ...typography.caption, color: colors.mutedForeground, textAlign: 'center' },
-  emptyBtn: { marginTop: spacing.md, alignSelf: 'stretch' },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  rowPressed: { backgroundColor: colors.muted },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.muted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: { ...typography.label, fontSize: 14 },
-  meta: { flex: 1 },
-  name: { ...typography.label, color: colors.foreground },
-  unreadName: { fontWeight: '800' },
-  preview: { ...typography.caption, color: colors.mutedForeground, marginTop: 2 },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.primary,
-  },
-})
+function makeStyles(colors: AppColors) {
+  return StyleSheet.create({
+    header: {
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    headerText: { flex: 1 },
+    headerTitle: { ...typography.title, fontSize: 26, color: colors.foreground },
+    headerSubtitle: { ...typography.caption, color: colors.mutedForeground, marginTop: 4 },
+    newBtn: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors.muted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    errorBox: { padding: spacing.md, gap: spacing.sm },
+    error: { ...typography.caption, color: colors.destructive },
+    list: { flexGrow: 1 },
+    empty: { alignItems: 'center', paddingTop: 48, paddingHorizontal: spacing.md },
+    emptyTitle: { ...typography.heading, fontSize: 18, color: colors.foreground, marginBottom: 6 },
+    emptyBody: { ...typography.caption, color: colors.mutedForeground, textAlign: 'center' },
+    emptyBtn: { marginTop: spacing.md, alignSelf: 'stretch' },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    rowPressed: { backgroundColor: colors.muted },
+    avatar: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors.muted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarText: { ...typography.label, fontSize: 14, color: colors.foreground },
+    meta: { flex: 1 },
+    name: { ...typography.label, color: colors.foreground },
+    unreadName: { fontWeight: '800' },
+    preview: { ...typography.caption, color: colors.mutedForeground, marginTop: 2 },
+    dot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: colors.primary,
+    },
+  })
+}

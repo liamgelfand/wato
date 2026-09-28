@@ -1,10 +1,10 @@
 import Link from 'next/link'
-import { formatDistanceToNow } from 'date-fns'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { formatDistanceToNow, format } from 'date-fns'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ProofDisplay } from '@/components/attempt/proof-display'
-import { Trophy } from 'lucide-react'
+import { PointsPill } from '@/components/ui/points-pill'
 
 interface FriendsActivityFeedProps {
   attempts: Array<{
@@ -27,10 +27,16 @@ interface FriendsActivityFeedProps {
   emptyDescription?: string
 }
 
+function formatActivityTime(date: Date): string {
+  const relative = formatDistanceToNow(date, { addSuffix: true })
+  const absolute = format(date, 'MMM d, h:mm a')
+  return `${absolute} · ${relative}`
+}
+
 export function FriendsActivityFeed({
   attempts,
   emptyTitle = 'No activity yet',
-  emptyDescription = 'When friends and other users complete challenges, their proof posts will show up here.',
+  emptyDescription = 'When friends complete challenges, their proof posts will show up here.',
 }: FriendsActivityFeedProps) {
   if (attempts.length === 0) {
     return (
@@ -47,6 +53,7 @@ export function FriendsActivityFeed({
         const initials = attempt.user.name
           ? attempt.user.name.split(' ').map((n) => n[0]).join('').toUpperCase()
           : attempt.user.username.substring(0, 2).toUpperCase()
+        const completedAt = new Date(attempt.updatedAt)
 
         return (
           <Card key={attempt.id} className="overflow-hidden">
@@ -60,15 +67,14 @@ export function FriendsActivityFeed({
                   <p className="font-semibold truncate">
                     {attempt.user.name || attempt.user.username}
                   </p>
-                  <p className="text-sm text-muted-foreground">
-                    completed {attempt.challenge.title} ·{' '}
-                    {formatDistanceToNow(new Date(attempt.updatedAt), { addSuffix: true })}
+                  <p className="text-sm text-muted-foreground truncate">
+                    completed {attempt.challenge.title}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {formatActivityTime(completedAt)}
                   </p>
                 </div>
-                <div className="flex items-center gap-1 text-sm font-medium text-primary shrink-0">
-                  <Trophy className="h-4 w-4" />
-                  +{attempt.challenge.points}
-                </div>
+                <PointsPill points={attempt.challenge.points} />
               </div>
             </CardHeader>
             <CardContent className="space-y-3 pt-0">

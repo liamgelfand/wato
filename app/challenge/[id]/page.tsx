@@ -7,8 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ReportDialog } from '@/components/moderation/report-dialog'
-import { ShareButton } from '@/components/share/share-button'
-import { challengeUrl } from '@/lib/deep-links'
+import { ShareChallengeMenu } from '@/components/share/share-challenge-menu'
 import { Link2, Clock, Calendar, Trophy } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import Link from 'next/link'
@@ -132,7 +131,7 @@ export default async function ChallengePage({ params }: PageProps) {
               <p className="text-muted-foreground">{challenge.description}</p>
             </div>
             <ReportDialog targetType="CHALLENGE" targetId={challenge.id} />
-            <ShareButton title={challenge.title} url={challengeUrl(challenge.id)} />
+            <ShareChallengeMenu challengeId={challenge.id} title={challenge.title} />
           </div>
         </CardHeader>
         <CardContent>

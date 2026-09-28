@@ -1,67 +1,84 @@
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Platform, Pressable, StyleSheet, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { BlurView } from 'expo-blur'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { WatoLogo } from '../ui/wato-logo'
-import { colors, spacing, typography } from '../../constants/theme'
+import { useTheme } from '../../hooks/use-theme'
+import { spacing } from '../../constants/theme'
 
 type FeedBrandHeaderProps = {
-  scrollY: Animated.Value
   onCreate?: () => void
 }
 
-export function FeedBrandHeader({ scrollY, onCreate }: FeedBrandHeaderProps) {
-  const opacity = scrollY.interpolate({
-    inputRange: [0, 72],
-    outputRange: [1, 0],
-    extrapolate: 'clamp',
-  })
+export function FeedBrandHeader({ onCreate }: FeedBrandHeaderProps) {
+  const { colors, isDark } = useTheme()
+  const insets = useSafeAreaInsets()
 
-  const translateY = scrollY.interpolate({
-    inputRange: [0, 72],
-    outputRange: [0, -8],
-    extrapolate: 'clamp',
-  })
-
-  return (
-    <Animated.View style={[styles.wrap, { opacity, transform: [{ translateY }] }]}>
-      <View style={styles.row}>
-        <View style={styles.brand}>
-          <WatoLogo />
-        </View>
+  const headerContent = (
+    <View style={[styles.row, { paddingTop: insets.top + 6 }]}>
+      <View style={styles.brand}>
+        <WatoLogo />
+      </View>
+      <View style={styles.actions}>
         {onCreate ? (
           <Pressable
             onPress={onCreate}
-            style={styles.createBtn}
+            style={[styles.iconBtn, { backgroundColor: `${colors.foreground}10` }]}
             accessibilityRole="button"
             accessibilityLabel="Create challenge"
           >
-            <Ionicons name="add" size={26} color={colors.foreground} />
+            <Ionicons name="add" size={24} color={colors.foreground} />
           </Pressable>
         ) : null}
       </View>
-    </Animated.View>
+    </View>
+  )
+
+  if (Platform.OS === 'ios') {
+    return (
+      <BlurView
+        intensity={75}
+        tint={isDark ? 'dark' : 'light'}
+        style={styles.header}
+      >
+        {headerContent}
+      </BlurView>
+    )
+  }
+
+  return (
+    <View style={[styles.header, { backgroundColor: colors.headerBlur }]}>
+      {headerContent}
+    </View>
   )
 }
 
+const HEADER_HEIGHT = 52
+
+export { HEADER_HEIGHT }
+
 const styles = StyleSheet.create({
-  wrap: {
-    paddingBottom: spacing.md,
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    paddingHorizontal: spacing.md,
+    paddingBottom: 10,
   },
   row: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
   },
-  brand: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  createBtn: {
-    width: 40,
-    height: 40,
+  brand: { flex: 1 },
+  actions: { flexDirection: 'row', gap: 6 },
+  iconBtn: {
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 20,
-    backgroundColor: colors.muted,
-    marginTop: 2,
+    borderRadius: 18,
   },
 })

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { router } from 'expo-router'
+import { PointsPill } from '../../components/ui/points-pill'
 import { Screen } from '../../components/ui/screen'
 import { TabHeader } from '../../components/ui/tab-header'
 import { AuthLoading, useAuthToken } from '../../hooks/use-auth-token'
@@ -68,7 +69,7 @@ export default function FriendsTab() {
             <Text style={styles.action}>
               completed <Text style={styles.challenge}>{item.challenge.title}</Text>
             </Text>
-            <Text style={styles.points}>+{item.challenge.points} pts</Text>
+            <PointsPill points={item.challenge.points} style={styles.pointsPill} />
           </Pressable>
         )}
       />
@@ -95,5 +96,5 @@ const styles = StyleSheet.create({
   name: { ...typography.label, color: colors.foreground },
   action: { ...typography.caption, color: colors.mutedForeground, marginTop: 4 },
   challenge: { color: colors.foreground, fontWeight: '600' },
-  points: { ...typography.caption, color: colors.primary, marginTop: 6, fontWeight: '600' },
+  pointsPill: { marginTop: spacing.sm, alignSelf: 'flex-start' },
 })

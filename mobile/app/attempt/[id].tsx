@@ -13,6 +13,7 @@ import {
 } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Screen } from '../../components/ui/screen'
 import { AuthLoading, useAuthToken } from '../../hooks/use-auth-token'
@@ -26,7 +27,9 @@ import {
 } from '../../lib/api'
 import { formatRelativeTime, formatTimestamp } from '../../lib/format-time'
 import { ProofMedia } from '../../components/media/proof-media'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { hapticLight, hapticMedium, hapticSuccess } from '../../lib/haptics'
+import { type AppColors, radius, spacing, typography, shadows } from '../../constants/theme'
+import { useTheme } from '../../hooks/use-theme'
 
 type CommentUser = {
   id: string
@@ -64,9 +67,14 @@ function displayName(user: CommentUser) {
   return user.name ?? user.username
 }
 
+function initials(user: CommentUser) {
+  return displayName(user).split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+}
+
 export default function AttemptPostScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { token, loading: authLoading } = useAuthToken()
+  const { colors } = useTheme()
   const insets = useSafeAreaInsets()
   const scrollRef = useRef<ScrollView>(null)
   const [post, setPost] = useState<AttemptPost | null>(null)
@@ -90,7 +98,9 @@ export default function AttemptPostScreen() {
 
   const toggleLike = async () => {
     if (!token || !post) return
+    hapticLight()
     const result = await upvoteAttempt(token, post.id)
+    if (result.upvoted) hapticSuccess()
     setPost({
       ...post,
       engagement: {
@@ -103,6 +113,7 @@ export default function AttemptPostScreen() {
 
   const submitComment = async () => {
     if (!token || !post || !commentBody.trim() || submitting) return
+    hapticMedium()
     setSubmitting(true)
     try {
       await commentOnAttempt(token, post.id, commentBody.trim(), replyTo?.id)
@@ -117,6 +128,7 @@ export default function AttemptPostScreen() {
 
   const toggleCommentLike = async (commentId: string) => {
     if (!token || !post) return
+    hapticLight()
     await upvoteComment(token, commentId)
     await load()
   }
@@ -158,26 +170,56 @@ export default function AttemptPostScreen() {
   if (!post) {
     return (
       <Screen>
-        <Text style={styles.error}>Could not load this post.</Text>
+        <Text style={{ color: colors.destructive, textAlign: 'center', padding: spacing.lg }}>Could not load this post.</Text>
       </Screen>
     )
   }
 
   const proofUri = resolveMediaUrl(post.proofUrl)
   const keyboardOffset = insets.top + 48
+  const hasProof = !!proofUri
+  const styles = makeStyles(colors)
 
   return (
     <Screen padded={false}>
-      <View style={styles.topBar}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={24} color={colors.foreground} />
-        </Pressable>
-        <Text style={styles.topTitle} numberOfLines={1}>
-          {displayName(post.user)}
-        </Text>
-        <Pressable onPress={onShare} style={styles.backBtn}>
-          <Ionicons name="share-outline" size={22} color={colors.foreground} />
-        </Pressable>
+      {/* Full-bleed hero header */}
+      <View style={hasProof ? styles.heroWrap : styles.topBar}>
+        {hasProof ? (
+          <>
+            <ProofMedia uri={proofUri!} proofType={post.proofType} style={styles.hero} />
+            <LinearGradient
+              colors={['rgba(0,0,0,0.5)', 'transparent']}
+              style={styles.heroTopGradient}
+            />
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.7)']}
+              style={styles.heroBottomGradient}
+            />
+            <View style={[styles.heroNav, { paddingTop: insets.top + 8 }]}>
+              <Pressable onPress={() => router.back()} style={styles.heroNavBtn}>
+                <Ionicons name="chevron-back" size={24} color="#fff" />
+              </Pressable>
+              <Pressable onPress={onShare} style={styles.heroNavBtn}>
+                <Ionicons name="share-outline" size={22} color="#fff" />
+              </Pressable>
+            </View>
+            <View style={styles.heroFooter}>
+              <Text style={styles.heroName}>{displayName(post.user)}</Text>
+              <Text style={styles.heroChallenge}>{post.challenge.title}</Text>
+              <Text style={styles.heroTime}>{formatRelativeTime(post.updatedAt)}</Text>
+            </View>
+          </>
+        ) : (
+          <>
+            <Pressable onPress={() => router.back()} style={styles.backBtn}>
+              <Ionicons name="chevron-back" size={24} color={colors.foreground} />
+            </Pressable>
+            <Text style={styles.topTitle} numberOfLines={1}>{displayName(post.user)}</Text>
+            <Pressable onPress={onShare} style={styles.backBtn}>
+              <Ionicons name="share-outline" size={22} color={colors.foreground} />
+            </Pressable>
+          </>
+        )}
       </View>
 
       <KeyboardAvoidingView
@@ -190,36 +232,55 @@ export default function AttemptPostScreen() {
           contentContainerStyle={styles.scroll}
           keyboardDismissMode="interactive"
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.completedMeta}>
-            Completed <Text style={styles.challengeLink}>{post.challenge.title}</Text>
-          </Text>
-          <Text style={styles.timestamp}>{formatTimestamp(post.updatedAt)}</Text>
+          {!hasProof && (
+            <>
+              <Text style={styles.completedMeta}>
+                Completed{' '}
+                <Text style={styles.challengeLink}>{post.challenge.title}</Text>
+              </Text>
+              <Text style={styles.timestamp}>{formatTimestamp(post.updatedAt)}</Text>
+            </>
+          )}
 
-          {proofUri ? (
-            <ProofMedia uri={proofUri} proofType={post.proofType} style={styles.proof} />
+          {hasProof ? (
+            <View style={styles.actionsCard}>
+              <Pressable onPress={toggleLike} style={styles.likeBtn}>
+                <Ionicons
+                  name={post.engagement.userUpvoted ? 'heart' : 'heart-outline'}
+                  size={26}
+                  color={post.engagement.userUpvoted ? colors.primary : colors.foreground}
+                />
+                <Text style={styles.likeCount}>{post.engagement.upvoteCount}</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push(`/challenge/${post.challenge.id}`)}
+                style={styles.viewChallengeBtn}
+              >
+                <Ionicons name="flag-outline" size={18} color={colors.primary} />
+                <Text style={styles.viewChallenge}>View challenge</Text>
+              </Pressable>
+            </View>
           ) : (
-            <View style={styles.proofPlaceholder}>
-              <Ionicons name="image-outline" size={40} color={colors.mutedForeground} />
-              <Text style={styles.proofPlaceholderText}>No proof media</Text>
+            <View style={styles.actions}>
+              <Pressable onPress={toggleLike} style={styles.likeBtn}>
+                <Ionicons
+                  name={post.engagement.userUpvoted ? 'heart' : 'heart-outline'}
+                  size={22}
+                  color={post.engagement.userUpvoted ? colors.primary : colors.foreground}
+                />
+                <Text style={styles.likeCount}>{post.engagement.upvoteCount} likes</Text>
+              </Pressable>
+              <Pressable onPress={() => router.push(`/challenge/${post.challenge.id}`)}>
+                <Text style={styles.viewChallenge}>View challenge →</Text>
+              </Pressable>
             </View>
           )}
 
-          <View style={styles.actions}>
-            <Pressable onPress={toggleLike} style={styles.likeBtn}>
-              <Ionicons
-                name={post.engagement.userUpvoted ? 'heart' : 'heart-outline'}
-                size={22}
-                color={post.engagement.userUpvoted ? colors.primary : colors.foreground}
-              />
-              <Text style={styles.likeCount}>{post.engagement.upvoteCount} likes</Text>
-            </Pressable>
-            <Pressable onPress={() => router.push(`/challenge/${post.challenge.id}`)}>
-              <Text style={styles.viewChallenge}>View challenge · +{post.challenge.points} pts</Text>
-            </Pressable>
-          </View>
-
-          <Text style={styles.commentsTitle}>Comments</Text>
+          <Text style={styles.commentsTitle}>
+            Comments {post.engagement.comments.length > 0 ? `(${post.engagement.comments.length})` : ''}
+          </Text>
           {post.engagement.comments.length === 0 ? (
             <Text style={styles.noComments}>No comments yet. Be the first!</Text>
           ) : (
@@ -264,8 +325,71 @@ export default function AttemptPostScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+const HERO_HEIGHT = 340
+
+function makeStyles(colors: AppColors) { return StyleSheet.create({
   flex: { flex: 1 },
+
+  // Full-bleed hero
+  heroWrap: { height: HERO_HEIGHT, position: 'relative', backgroundColor: '#000' },
+  hero: { width: '100%', height: HERO_HEIGHT },
+  heroTopGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 100,
+  },
+  heroBottomGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 160,
+  },
+  heroNav: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.sm,
+  },
+  heroNavBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroFooter: {
+    position: 'absolute',
+    bottom: spacing.md,
+    left: spacing.md,
+    right: spacing.md,
+  },
+  heroName: {
+    fontFamily: 'DMSans_700Bold',
+    fontSize: 18,
+    color: '#fff',
+    letterSpacing: -0.2,
+  },
+  heroChallenge: {
+    fontFamily: 'DMSans_500Medium',
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 2,
+  },
+  heroRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 8 },
+  heroTime: {
+    fontFamily: 'DMSans_400Regular',
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.7)',
+  },
+
+  // Top bar (no media)
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -275,26 +399,27 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  topTitle: { flex: 1, textAlign: 'center', ...typography.label, fontSize: 16 },
+  topTitle: { flex: 1, textAlign: 'center', ...typography.label, fontSize: 16, color: colors.foreground },
+
   scroll: { padding: spacing.md, paddingBottom: spacing.xl },
+
   completedMeta: { ...typography.body, color: colors.foreground },
-  challengeLink: { fontWeight: '700', color: colors.primary },
-  timestamp: { ...typography.caption, color: colors.mutedForeground, marginTop: 4, marginBottom: spacing.md },
-  proof: {
-    width: '100%',
-    aspectRatio: 4 / 5,
-    borderRadius: radius.lg,
-    backgroundColor: colors.muted,
-  },
-  proofPlaceholder: {
-    aspectRatio: 4 / 5,
-    borderRadius: radius.lg,
-    backgroundColor: colors.muted,
+  challengeLink: { fontFamily: 'DMSans_700Bold', color: colors.primary },
+  metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, marginBottom: spacing.md },
+  timestamp: { ...typography.caption, color: colors.mutedForeground },
+
+  actionsCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
+    justifyContent: 'space-between',
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    ...shadows.sm,
   },
-  proofPlaceholderText: { ...typography.caption, color: colors.mutedForeground },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -304,18 +429,26 @@ const styles = StyleSheet.create({
   },
   likeBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   likeCount: { ...typography.label, color: colors.foreground },
-  viewChallenge: { ...typography.caption, color: colors.primary, fontWeight: '600' },
-  commentsTitle: { ...typography.heading, fontSize: 18, marginBottom: spacing.sm },
+  viewChallengeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  viewChallenge: { ...typography.caption, color: colors.primary, fontFamily: 'DMSans_600SemiBold' },
+
+  commentsTitle: {
+    ...typography.heading,
+    fontSize: 18,
+    color: colors.foreground,
+    marginBottom: spacing.sm,
+  },
   noComments: { ...typography.caption, color: colors.mutedForeground, marginBottom: spacing.md },
   comment: { marginBottom: spacing.md },
   reply: { marginLeft: spacing.lg, marginTop: spacing.sm },
   commentHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  commentAuthor: { ...typography.label, fontSize: 14 },
+  commentAuthor: { ...typography.label, fontSize: 14, color: colors.foreground },
   commentTime: { ...typography.caption, color: colors.mutedForeground },
-  commentBody: { ...typography.body, fontSize: 15, marginTop: 4 },
+  commentBody: { ...typography.body, fontSize: 15, marginTop: 4, color: colors.foreground },
   commentActions: { flexDirection: 'row', gap: spacing.md, marginTop: 6 },
   commentAction: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   commentActionText: { ...typography.caption, color: colors.mutedForeground },
+
   composer: {
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
@@ -355,4 +488,4 @@ const styles = StyleSheet.create({
   },
   sendDisabled: { opacity: 0.5 },
   error: { ...typography.body, color: colors.destructive, textAlign: 'center', padding: spacing.lg },
-})
+}) }

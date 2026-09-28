@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getApiUser } from '@/lib/api-auth'
 import { prisma } from '@/lib/db'
+import { areFriends } from '@/lib/friends'
 import { createThreadSchema } from '@/lib/validations'
 
 export async function POST(request: Request) {
@@ -28,16 +29,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Cannot message yourself' }, { status: 400 })
     }
 
-    const friendship = await prisma.friendship.findFirst({
-      where: {
-        OR: [
-          { requesterId: userId, addresseeId: friendId, status: 'ACCEPTED' },
-          { requesterId: friendId, addresseeId: userId, status: 'ACCEPTED' },
-        ],
-      },
-    })
-
-    if (!friendship) {
+    const friends = await areFriends(userId, friendId)
+    if (!friends) {
       return NextResponse.json(
         { error: 'You must be friends to start a conversation' },
         { status: 403 }

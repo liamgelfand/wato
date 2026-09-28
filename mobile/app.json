@@ -6,6 +6,15 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "scheme": "wato",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/YOUR_PROJECT_ID"
+    },
     "splash": {
       "resizeMode": "contain",
       "backgroundColor": "#6366f1"
@@ -29,10 +38,15 @@
           "cameraPermission": "Allow Wato to use your camera for challenge proof and profile pictures.",
           "microphonePermission": "Allow Wato to record video with audio for challenge proof."
         }
-      ]
+      ],
+      "expo-video",
+      "expo-updates"
     ],
     "extra": {
-      "apiUrl": "http://localhost:3000"
+      "apiUrl": "http://localhost:3000",
+      "eas": {
+        "projectId": "YOUR_PROJECT_ID"
+      }
     }
   }
 }

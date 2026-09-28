@@ -21,6 +21,7 @@ export async function GET(request: Request) {
       name: true,
       avatarUrl: true,
       bio: true,
+      isPrivate: true,
       role: true,
       totalPoints: true,
       challenges: {
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
       attempts: {
         where: { status: 'APPROVED' },
         orderBy: { updatedAt: 'desc' },
-        take: 50,
+        take: 100,
         include: {
           challenge: {
             select: {
@@ -97,6 +98,7 @@ export async function GET(request: Request) {
       name: profile.name,
       avatarUrl: profile.avatarUrl,
       bio: profile.bio,
+      isPrivate: profile.isPrivate,
       role: profile.role,
       totalPoints: profile.totalPoints,
       completedCount: profile._count.attempts,
@@ -117,6 +119,7 @@ export async function GET(request: Request) {
 const updateProfileSchema = z.object({
   name: z.string().min(1).max(50).optional(),
   bio: z.string().max(280).optional(),
+  isPrivate: z.boolean().optional(),
 })
 
 export async function PATCH(request: Request) {
@@ -142,6 +145,7 @@ export async function PATCH(request: Request) {
       username: true,
       name: true,
       bio: true,
+      isPrivate: true,
       avatarUrl: true,
       totalPoints: true,
     },

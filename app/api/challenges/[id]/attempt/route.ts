@@ -18,8 +18,12 @@ export async function POST(
     select: { status: true, prerequisiteChallengeId: true },
   })
 
-  if (!challenge || challenge.status !== 'ACTIVE') {
+  if (!challenge || (challenge.status !== 'ACTIVE' && challenge.status !== 'ARCHIVED')) {
     return NextResponse.json({ error: 'Challenge not available' }, { status: 400 })
+  }
+
+  if (challenge.status === 'ARCHIVED') {
+    return NextResponse.json({ error: 'This challenge is closed to new attempts' }, { status: 400 })
   }
 
   if (challenge.prerequisiteChallengeId) {
@@ -40,6 +44,23 @@ export async function POST(
   })
   if (existing) {
     return NextResponse.json({ attemptId: existing.id })
+  }
+
+  const alreadyCompleted = await prisma.attempt.findFirst({
+    where: { userId: user.id, challengeId, status: 'APPROVED' },
+  })
+  if (alreadyCompleted) {
+    return NextResponse.json(
+      { error: 'You already completed this challenge. Retry is only available after a rejection.' },
+      { status: 400 }
+    )
+  }
+
+  const inProgress = await prisma.attempt.findFirst({
+    where: { userId: user.id, challengeId, status: 'PENDING' },
+  })
+  if (inProgress) {
+    return NextResponse.json({ attemptId: inProgress.id })
   }
 
   const attempt = await prisma.attempt.create({
