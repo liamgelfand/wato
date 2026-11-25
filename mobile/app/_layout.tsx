@@ -12,12 +12,10 @@ import {
 } from '@expo-google-fonts/dm-sans'
 import { DeviceFrame } from '../components/device-frame'
 import { ThemeProvider, useTheme } from '../hooks/use-theme'
-import { useOTAUpdates } from '../hooks/use-ota-updates'
 import { colors as fallbackColors } from '../constants/theme'
 
 function AppShell() {
   const { colors, isDark } = useTheme()
-  useOTAUpdates()
 
   return (
     <>
